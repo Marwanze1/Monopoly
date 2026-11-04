@@ -51,7 +51,12 @@ select{background:#0f0f15;border:1px solid #333344;color:var(--txt);border-radiu
 .cell:hover{filter:brightness(.92)}
 .cell .in{position:absolute;left:50%;top:50%;width:100cqw;height:100cqh;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;text-align:center;padding-bottom:5%}
 .cell.l .in{width:100cqh;height:100cqw;transform:translate(-50%,-50%) rotate(90deg)}
-.cell.t .in{transform:translate(-50%,-50%) rotate(180deg)}
+/* rangée du haut : texte à l'endroit (on joue tous devant le même écran), bande de couleur côté centre */
+.cell.t .in{flex-direction:column-reverse;padding:5% 0 0}
+.cell.t .band{border-bottom:none;border-top:1.5px solid var(--ink)}
+.cell.t .nm{padding:0 5% 6%}
+.cell.t .pr,.cell.t .stk{margin-top:0}
+.cell.t .in > :last-child{margin-bottom:auto}
 .cell.r .in{width:100cqh;height:100cqw;transform:translate(-50%,-50%) rotate(-90deg)}
 .band{flex:none;width:100%;height:21%;border-bottom:1.5px solid var(--ink)}
 .nm{font-weight:800;text-transform:uppercase;font-size:.84em;letter-spacing:.2px;padding:6% 5% 0;overflow-wrap:anywhere}
@@ -64,8 +69,8 @@ select{background:#0f0f15;border:1px solid #333344;color:var(--txt);border-radiu
 .cell.corner{font-size:calc(var(--U) * .17)}
 .cell.corner .in{width:84cqw;height:84cqh;justify-content:center;gap:4%;padding:0}
 .cell.k0 .in{transform:translate(-50%,-50%) rotate(-45deg)}
-.cell.k20 .in{transform:translate(-50%,-50%) rotate(135deg)}
-.cell.k30 .in{transform:translate(-50%,-50%) rotate(-135deg)}
+.cell.k20 .in{transform:translate(-50%,-50%) rotate(-45deg)}
+.cell.k30 .in{transform:translate(-50%,-50%) rotate(45deg)}
 .corner .big{font-family:'Bebas Neue',Impact,sans-serif;font-size:1.55em;letter-spacing:1px;line-height:.95}
 .corner .small{font-size:.74em;font-weight:700;max-width:80%}
 .corner .ic{font-size:2.6em;margin:0}
@@ -491,7 +496,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
 const RULES = {
   START_CB: 1500, SALARY: 200, BANK_CAP: 200, CONTROL_LIMIT: 200, CONTROL_FINE: 100,
   PMU_BET: 100, PMU_WIN: 500, OFFSHORE_CAP: 500, OFFSHORE_LOSS: 0.30,
-  GOURMAND_PRICE: 150, GOURMAND_CAP: 300, TAX: 200, SELL_RATIO: 0.5, AUTO_SALE: 2,
+  GOURMAND_PRICE: 150, GOURMAND_CAP: 300, TAX: 200, RENT_RATIO: 0.2, PMU_PRICE: 200, PMU_FEE: 10, PMU_OWNER_LOSS: 50, SELL_RATIO: 0.5, AUTO_SALE: 2,
 };
 const COLORS = ['#ff4d6d', '#4dabff', '#3ddc84', '#ffd23f', '#c77dff', '#ff9f43'];
 
@@ -549,7 +554,7 @@ const BOARD = [
   Q('Copernic', 'grigny', 140, 25, 40, 80, 8),                                         // 9
   { type: 'visit', name: 'Simple visite', icon: '👮' },                                 // 10 coin bas-gauche (prison)
   Q('Les 3000', 'aulnay', 140, 20, 35, 70, 8),                                         // 11
-  { type: 'pmu', name: 'PMU', icon: '🐎' },                                             // 12
+  { type: 'pmu', name: 'PMU', icon: '🐎', price: 200 },                                 // 12
   Q('Rose-des-Vents', 'aulnay', 160, 25, 40, 80, 8),                                   // 13
   Q('Gros-Saule', 'aulnay', 180, 30, 45, 90, 8),                                       // 14
   { type: 'appro', name: 'Avion Cargo – Caraïbes', product: 'heroine', icon: '✈️' },   // 15
@@ -579,7 +584,7 @@ const BOARD = [
   Q('Val Fourré', 'mantes', 400, 60, 90, 180, 4),                                      // 39
 ];
 BOARD.forEach((c, i) => c.idx = i);
-const PRISON_IDX = 10, VISIT_IDX = 10, GOTO_PRISON_IDX = 30, GOURMAND_IDX = 28;   // la prison est dans le coin « Simple visite »
+const PRISON_IDX = 10, VISIT_IDX = 10, GOTO_PRISON_IDX = 30, GOURMAND_IDX = 28, PMU_IDX = 12;   // la prison est dans le coin « Simple visite »
 const APPRO_IDX = [5, 15, 25], OFFSHORE_IDX = [4, 35];
 
 const ENTERPRISES = {
@@ -708,11 +713,11 @@ const MANDAT = [
    ===================================================================== */
 let S = null;
 let actionResolver = null;
-const SAVE_KEY = 'lereseau.save.v3';   // v3 : Mantes-la-Jolie + Panama en case 4
+const SAVE_KEY = 'lereseau.save.v4';   // v3 : Mantes-la-Jolie + Panama en case 4
 
 function newGame(cfg) {
   S = {
-    v: 3,
+    v: 4,
     players: cfg.players.map((p, i) => ({ id: i, name: p.name, color: p.color, pos: 0, cb: RULES.START_CB, liq: 0,
       skip: 0, inPrison: false, credit: 0, vice: 0, planque: 0, freeAppro: 0, ruined: false, dev: p.dev || 'host' })),
     props: {}, ent: {}, police: VISIT_IDX, cur: 0, round: 1, maxRounds: cfg.maxRounds, turnNo: 0,
@@ -721,7 +726,7 @@ function newGame(cfg) {
     stats: cfg.players.map(() => newStats()),
     hist: [cfg.players.map(() => RULES.START_CB)],
   };
-  BOARD.forEach((c, i) => { if (c.type === 'quartier' || c.type === 'gourmand') S.props[i] = { owner: null, product: null, stock: 0, last: -1 }; });
+  BOARD.forEach((c, i) => { if (c.type === 'quartier' || c.type === 'gourmand' || c.type === 'pmu') S.props[i] = { owner: null, product: null, stock: 0, last: -1 }; });
   Object.keys(ENTERPRISES).forEach(k => S.ent[k] = { owner: null, closed: 0 });
 }
 const save = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} };
@@ -772,23 +777,31 @@ const closestOf = (pos, list) => list.reduce((b, x) => {
 function assetsOf(p) {
   const a = [];
   for (const c of BOARD) {
-    if ((c.type === 'quartier' || c.type === 'gourmand') && S.props[c.idx].owner === p.id) {
+    if ((c.type === 'quartier' || c.type === 'gourmand' || c.type === 'pmu') && S.props[c.idx] && S.props[c.idx].owner === p.id) {
       const pr = S.props[c.idx];
       const label = c.type === 'quartier'
         ? `<span class="chip" style="--cc:${CITIES[c.city].color}">${c.name}</span> ${pr.product ? `<span class="dim">stock ${PRODUCTS[pr.product].icon}×${pr.stock} perdu</span>` : ''}`
-        : `🍔 ${c.name}`;
-      a.push({ kind: 'prop', idx: c.idx, name: c.name, label, value: Math.floor(c.price * RULES.SELL_RATIO) });
+        : `${c.icon} ${c.name}`;
+      a.push({ kind: 'prop', idx: c.idx, name: c.name, label, value: Math.floor(c.price * RULES.SELL_RATIO), liq: c.type === 'quartier' });
     }
   }
   const k = entOf(p.id);
-  if (k) a.push({ kind: 'ent', key: k, name: ENTERPRISES[k].name, label: `${ENTERPRISES[k].icon} ${ENTERPRISES[k].name}`, value: Math.floor(ENTERPRISES[k].price * RULES.SELL_RATIO) });
+  if (k) a.push({ kind: 'ent', key: k, name: ENTERPRISES[k].name, label: `${ENTERPRISES[k].icon} ${ENTERPRISES[k].name}`, value: Math.floor(ENTERPRISES[k].price * RULES.SELL_RATIO), liq: false });
   return a.sort((x, y) => x.value - y.value);
 }
-function sellAsset(p, a) {
+/** Revente à la banque. Un quartier se revend « sous le manteau » : payé en liquide.
+    forced = vente forcée pour payer une dette → l'argent part directement en CB pour régler. */
+function sellAsset(p, a, forced = false) {
   if (a.kind === 'prop') { const pr = S.props[a.idx]; pr.owner = null; pr.stock = 0; pr.product = null; }
   else { S.ent[a.key].owner = null; S.ent[a.key].closed = 0; }
-  p.cb += a.value;
-  log(`🏷️ ${P(p)} revend ${a.name} à la banque : +${eur(a.value)} CB`);
+  if (a.liq && !forced) { p.liq += a.value; log(`🏷️ ${P(p)} revend ${a.name} sous le manteau : +${eur(a.value)} en liquide`); }
+  else { p.cb += a.value; log(`🏷️ ${P(p)} revend ${a.name} à la banque : +${eur(a.value)} CB${forced ? ' (vente forcée pour payer)' : ''}`); }
+}
+/** Loyer payé par un adversaire qui s'arrête sur le quartier : 20 % du prix, ×2 si la ville est complète. */
+function rentOf(i) {
+  const c = BOARD[i], pr = S.props[i];
+  const base = Math.max(5, Math.round(c.price * RULES.RENT_RATIO / 5) * 5);
+  return base * (pr.owner !== null && ownsCity(pr.owner, c.city) ? 2 : 1);
 }
 
 /* =====================================================================
@@ -819,12 +832,12 @@ async function raiseFunds(p, amount, why) {
     if (!canL && !assets.length) return;
     if (AUTO || !isCur) {
       if (canL && AUTO) { autoLaunder(p, false); if (!canLaunder(p) && p.cb < amount && !assets.length) return; if (p.cb >= amount) return; }
-      if (assets.length) { log(`⚠️ ${P(p)} doit vendre pour payer (${why}).`); sellAsset(p, assets[0]); continue; }
+      if (assets.length) { log(`⚠️ ${P(p)} doit vendre pour payer (${why}).`); sellAsset(p, assets[0], true); continue; }
       return;
     }
     render();
     const ch = await ask('💳 Fonds insuffisants',
-      `${P(p)} doit payer <b>${eur(amount)}</b> (${why}) mais n’a que <b>${eur(p.cb)}</b> en CB.<br>Le liquide ne sert pas à payer : blanchis-le ou revends des biens.`,
+      `${P(p)} doit payer <b>${eur(amount)}</b> (${why}) mais n’a que <b>${eur(p.cb)}</b> en CB.<br>Le liquide ne sert pas à payer : blanchis-le ou revends des biens (un quartier revendu donne du liquide, à blanchir).`,
       [{ label: '💀 Faillite', value: 'b', kind: 'danger' },
        { label: '🏷️ Revendre', value: 's', disabled: !assets.length },
        { label: '🧼 Blanchir', value: 'l', disabled: !canL, kind: 'primary' }], { color: '#ff3b5c' });
@@ -1022,6 +1035,9 @@ async function movePlayer(p, steps) {
       toast(`🏁 Départ : +${eur(RULES.SALARY)} CB`, p.color);
     }
     render(); await sleep(130);
+    // En PASSANT sur une case d'approvisionnement, on peut se faire livrer (comme le salaire au Départ)
+    const here = BOARD[p.pos];
+    if (dir > 0 && s < Math.abs(steps) - 1 && here.type === 'appro' && !S.over) await approDialog(p, here.product, true);
   }
 }
 const advanceTo = (p, idx) => movePlayer(p, (idx - p.pos + 40) % 40);
@@ -1038,7 +1054,7 @@ async function resolveCase(p, depth = 0) {
     case 'tax': await payFine(p, RULES.TAX, 'Redressement fiscal'); break;
     case 'appro': await approDialog(p, c.product); break;
     case 'visit': log(`👮 ${P(p)} est en simple visite au commissariat.`); break;
-    case 'pmu': await pmuDialog(p); break;
+    case 'pmu': await landPmu(p, i); break;
     case 'neutral': log(`🅿️ ${P(p)} se gare au parking souterrain. Rien à signaler.`); break;
     case 'offshore': await landOffshore(p, i); break;
     case 'gourmand': await landGourmand(p, i); break;
@@ -1071,7 +1087,16 @@ async function landQuartier(p, i) {
   if (pr.owner === p.id) { log(`🏠 ${P(p)} passe dans son quartier ${c.name}.`); return; }
   const o = S.players[pr.owner];
   if (S.police === i) { log(`🚓 ${c.name} : la Police est sur place, le point de deal est fermé.`); return; }
-  if (pr.stock <= 0 || !pr.product) { log(`📭 ${c.name} (${P(o)}) : rupture de stock, rien à payer.`); toast(`📭 ${c.name} : rupture de stock`, o.color); return; }
+  // 1) le loyer : selon le prix du quartier, ×2 si le proprio a toute la ville
+  const rent = rentOf(i), full = ownsCity(o.id, c.city);
+  const okR = await pay(p, rent, o, `loyer à ${c.name}`, true);
+  if (!okR) return;
+  ST(o).sales += rent; ST(p).client += rent;
+  log(`🏠 ${P(p)} paie un loyer de <b>${eur(rent)}</b> à ${P(o)} pour ${c.name}${full ? ' (ville complète ×2)' : ''} → ${P(o)} +${eur(rent)} liquide`);
+  toast(`🏠 Loyer ${c.name} : ${esc(p.name)} → ${esc(o.name)} ${eur(rent)}${full ? ' (×2)' : ''}`, o.color);
+  render(); await sleep(400);
+  // 2) s'il y a du stock, il achète aussi 1 jeton
+  if (pr.stock <= 0 || !pr.product) { log(`📭 ${c.name} : rupture de stock, pas de produit à acheter.`); return; }
   const prod = PRODUCTS[pr.product], price = unitPrice(i, pr.product);
   const ok = await pay(p, price, o, `achat à ${c.name}`, true);
   if (!ok) return;
@@ -1124,16 +1149,28 @@ async function landEnterprise(p, key) {
   log(`${E.icon} ${P(p)} passe devant ${E.name} de ${P(S.players[e.owner])}. Rien à signaler.`);
 }
 
+/** Case PMU : on peut l'acheter ; le patron touche une commission sur chaque pari des autres. */
+async function landPmu(p, i) {
+  const c = BOARD[i], pr = S.props[i] || (S.props[i] = { owner: null, product: null, stock: 0, last: -1 });
+  if (pr.owner === null) {
+    const ok = await offerBuy(p, '🐎 PMU', ficheHTML(i), c.price, '#2ecc71');
+    if (ok) { p.cb -= c.price; pr.owner = p.id; ST(p).buys++; log(`🐎 ${P(p)} rachète <b>le PMU</b> (${eur(c.price)}) : il touchera ${eur(RULES.PMU_FEE)} sur chaque pari.`); render(); }
+  }
+  await pmuDialog(p);
+}
 async function pmuDialog(p) {
+  const pr = S.props[PMU_IDX], boss = pr && pr.owner !== null && pr.owner !== p.id ? S.players[pr.owner] : null;
   if (p.cb < RULES.PMU_BET) { log(`🐎 ${P(p)} n’a pas de quoi miser au PMU.`); return info('🐎 PMU', `Il faut ${eur(RULES.PMU_BET)} en CB pour parier.`, { color: '#2ecc71' }); }
-  const n = await ask('🐎 PMU', `Mise <b>${eur(RULES.PMU_BET)}</b> (CB) et annonce un numéro. Si le dé tombe dessus : <b>${eur(RULES.PMU_WIN)}</b> !`,
+  const n = await ask('🐎 PMU', `Mise <b>${eur(RULES.PMU_BET)}</b> (CB) et annonce un numéro. Si le dé tombe dessus : <b>${eur(RULES.PMU_WIN)}</b> !${boss ? `<p class="dim">Le PMU appartient à ${P(boss)} : il touche ${eur(RULES.PMU_FEE)} sur ton pari… et perd ${eur(RULES.PMU_OWNER_LOSS)} si tu gagnes.</p>` : ''}`,
     [{ label: 'Pas de pari', value: 0 }, ...[1, 2, 3, 4, 5, 6].map(k => ({ label: String(k), value: k, kind: 'primary' }))],
     { color: '#2ecc71', grid: true });
   if (!n) { log(`🐎 ${P(p)} ne parie pas.`); return; }
   p.cb -= RULES.PMU_BET; ST(p).pmu++;
+  if (boss) { boss.cb += RULES.PMU_FEE; log(`🐎 ${P(boss)}, patron du PMU, touche ${eur(RULES.PMU_FEE)} de commission.`); }
   const [r] = await rollDice(1);
   if (r === n) {
     p.cb += RULES.PMU_WIN; ST(p).pmuWin++;
+    if (boss) { log(`🐎 ${P(boss)} doit payer ${eur(RULES.PMU_OWNER_LOSS)} au gagnant… ça pique.`); await pay(boss, RULES.PMU_OWNER_LOSS, null, 'gagnant au PMU'); }
     splash('🐎 JACKPOT !', `${esc(p.name)} gagne ${eur(RULES.PMU_WIN)} au PMU`, '#2ecc71', 'win');
     log(`🐎 ${P(p)} parie sur le ${n}… le dé fait ${r} : <b>GAGNÉ ${eur(RULES.PMU_WIN)}</b> !`);
     await info('🐎 PMU — GAGNÉ !', `Le dé fait <b>${r}</b> : tu remportes <b>${eur(RULES.PMU_WIN)}</b> (CB) 🎉`, { color: '#2ecc71' });
@@ -1180,9 +1217,14 @@ function approApply(p, prodKey, sel) {
   if (n) toast(`📦 ${n} lot(s) livré(s) — ${eur(spent)}`, p.color);
   render();
 }
-async function approDialog(p, prodKey) {
+async function approDialog(p, prodKey, passing = false) {
   const PR = PRODUCTS[prodKey], c = BOARD[p.pos];
   const rows = approRows(p, prodKey), ok = rows.filter(r => !r.reason);
+  if (passing) {   // en passage : on ne dérange que si une livraison est possible et abordable
+    if (!ok.length || (p.cb < PR.cost && !p.freeAppro)) return;
+    log(`${c.icon} ${P(p)} passe devant ${c.name} : livraison possible en passant.`);
+    toast(`${c.icon} En passant par ${c.name} : livraison possible !`, PR.color);
+  }
   if (!ok.length) {
     log(`${c.icon} ${P(p)} passe à ${c.name} mais n’a aucun quartier à livrer.`);
     return info(`${c.icon} ${c.name}`, rows.length
@@ -1486,7 +1528,9 @@ function cellView(i) {
       inner = `<div class="nm">${c.name}</div><div class="ic">${c.icon}</div><div class="pr">${o && e.closed ? '🚫 fermé' : eur(E.price)}</div>`; break; }
     case 'offshore': inner = `<div class="nm">${c.name}</div><div class="ic">${c.icon}</div><div class="pr">500 € · −30 %</div>`; break;
     case 'tax': inner = `<div class="nm">${c.name}</div><div class="ic">${c.icon}</div><div class="pr">Payez ${eur(RULES.TAX)}</div>`; break;
-    case 'pmu': inner = `<div class="nm">${c.name}</div><div class="ic">${c.icon}</div><div class="pr">100 → 500 €</div>`; break;
+    case 'pmu': { const pr = S.props[i], o = pr && pr.owner !== null ? S.players[pr.owner] : null;
+      if (o) ownerMark(o);
+      inner = `<div class="nm">${c.name}</div><div class="ic">${c.icon}</div><div class="pr">${o ? '100 → 500 €' : eur(c.price)}</div>`; break; }
     case 'street': inner = `<div class="nm">Street Cred</div><div class="ic qm st">🎤</div>`; break;
     case 'mandat': inner = `<div class="nm">Mandat &amp; Police</div><div class="ic qm md">⚖️</div>`; break;
     case 'start': inner = `<div class="small">Recevez ${eur(RULES.SALARY)} à chaque passage</div><div class="big">DÉPART</div><div class="arrow">⬅</div>`; break;
@@ -1585,6 +1629,7 @@ function renderPlayers() {
     const extra = [];
     if (k) { const E = ENTERPRISES[k], e = S.ent[k]; extra.push(`<span class="tagx">${E.icon} ${E.name}${e.closed ? ' 🚫' : ''}</span>`); }
     if (g.owner === p.id) extra.push('<span class="tagx">🍔 Le Gourmand</span>');
+    if (S.props[PMU_IDX] && S.props[PMU_IDX].owner === p.id) extra.push('<span class="tagx">🐎 PMU</span>');
     if (p.credit) extra.push(`<span class="tagx">🍔 crédit ${eur(p.credit)}</span>`);
     if (p.vice) extra.push(`<span class="tagx">📜 Vice ×${p.vice}</span>`);
     if (p.planque) extra.push(`<span class="tagx">🕳️ Planque ×${p.planque}</span>`);
@@ -1898,9 +1943,9 @@ function sellUI(pid, args, exec, onOpen) {
       const p = S.players[pid];
       const as = assetsOf(p);
       box.innerHTML = `<h2>🏷️ Revendre à la banque</h2>
-        <p class="note">La banque rachète à ${pct(RULES.SELL_RATIO)} du prix d’achat, payé en CB. Le stock du quartier est perdu.</p>
-        <div class="wallet"><span class="cb">💳 CB : ${eur(p.cb)}</span></div>
-        ${as.length ? as.map((a, k) => `<div class="srow"><span>${a.label}</span><button class="btn ${armed === k ? 'danger' : ''}" data-k="${k}">${armed === k ? 'Confirmer ?' : `Revendre +${eur(a.value)}`}</button></div>`).join('') : '<p class="dim">Aucun bien à revendre.</p>'}
+        <p class="note">Rachat à ${pct(RULES.SELL_RATIO)} du prix d’achat. Un <b>quartier</b> se revend sous le manteau : payé en <b>💵 liquide</b> (à blanchir). Les autres biens sont payés en 💳 CB. Le stock du quartier est perdu.</p>
+        <div class="wallet"><span class="liq">💵 Liquide : ${eur(p.liq)}</span><span class="cb">💳 CB : ${eur(p.cb)}</span></div>
+        ${as.length ? as.map((a, k) => `<div class="srow"><span>${a.label}</span><button class="btn ${armed === k ? 'danger' : ''}" data-k="${k}">${armed === k ? 'Confirmer ?' : `Revendre +${eur(a.value)} ${a.liq ? '💵' : '💳'}`}</button></div>`).join('') : '<p class="dim">Aucun bien à revendre.</p>'}
         <div class="mbtns"><button class="btn primary" data-a="done">Fermer</button></div>`;
       box.querySelectorAll('.srow button').forEach(b => b.onclick = () => {
         const k = +b.dataset.k, a = as[k];
@@ -1924,7 +1969,8 @@ function ficheHTML(i) {
       return `<div class="fband" style="background:${city.color}">${city.name} · ${city.label}</div>${CITY_PHOTOS[c.city] ? `<div class="fph fph-${c.city}">📷 ${city.name} · Wikimedia Commons</div>` : ''}
         <table class="ft"><tr><td>💰 Prix d’achat</td><td><b>${eur(c.price)}</b></td></tr>
         ${PKEYS.map(k => `<tr><td>${PRODUCTS[k].icon} ${PRODUCTS[k].name}</td><td><b>${eur(c.prices[k] * (full ? 2 : 1))}</b>${full ? ' <span class="x2i">×2</span>' : ''} <span class="dim">· stock max ${cap(i, k)}</span></td></tr>`).join('')}
-        <tr><td>📦 Stock max du quartier</td><td><b>${c.max}</b></td></tr></table>
+        <tr><td>📦 Stock max du quartier</td><td><b>${c.max}</b></td></tr>
+        <tr><td>🏠 Loyer (visiteur)</td><td><b>${eur(rentOf(i))}</b>${full ? ' <span class="x2i">×2</span>' : ` <span class="dim">· ${eur(rentOf(i) * 2)} si ville complète</span>`}</td></tr></table>
         ${o ? `<p>Propriétaire : ${P(o)} — stock : <b>${pr.product ? PRODUCTS[pr.product].icon + ' ×' + pr.stock : 'vide'}</b>${full ? '<br>👑 Ville complète : prix ×2' : ''}</p>` : '<p class="dim">Quartier libre. Un seul produit stocké à la fois.</p>'}
         ${S.police === i ? '<p class="warn">🚓 La Police stationne ici : pas de vente ni d’approvisionnement.</p>' : ''}`; }
     case 'start': return `<p>Passe ou arrête-toi ici : <b>+${eur(RULES.SALARY)}</b> (CB).</p>`;
@@ -1933,7 +1979,7 @@ function ficheHTML(i) {
     case 'tax': return `<p>Le fisc te tombe dessus : paie <b>${eur(RULES.TAX)}</b> (CB).</p>`;
     case 'appro': { const PR = PRODUCTS[c.product]; return `<p>Achète des lots de <b>${PR.lot} ${PR.icon} ${PR.name}</b> pour <b>${eur(PR.cost)}</b> (CB).</p><ul><li>1 lot par quartier et par tour</li><li>Un quartier ne stocke qu’un seul produit</li><li>Stock max ${PR.name} : ${PR.max} (et jamais plus que le max du quartier)</li><li>Impossible si la Police est sur le quartier</li></ul>`; }
     case 'visit': return '<p>Simple visite au commissariat. Rien ne se passe. <span class="dim">(La Police démarre ici.)</span></p>';
-    case 'pmu': return `<p>Mise <b>${eur(RULES.PMU_BET)}</b> (CB), annonce un numéro de 1 à 6 et lance 1 dé.<br>Bon numéro → <b>${eur(RULES.PMU_WIN)}</b> (CB). Totalement légal.</p>`;
+    case 'pmu': { const pr = S.props[i]; return `<p>Prix : <b>${eur(c.price)}</b>.</p><p>Mise <b>${eur(RULES.PMU_BET)}</b> (CB), annonce un numéro de 1 à 6 et lance 1 dé.<br>Bon numéro → <b>${eur(RULES.PMU_WIN)}</b> (CB). Totalement légal.</p><ul><li>Le patron touche <b>${eur(RULES.PMU_FEE)}</b> (CB) à chaque pari d’un autre joueur</li><li>Il perd <b>${eur(RULES.PMU_OWNER_LOSS)}</b> quand quelqu’un gagne</li></ul>${ownerLine(pr && pr.owner !== null ? S.players[pr.owner] : null)}`; }
     case 'neutral': return '<p>Parking souterrain : rien à signaler.</p>';
     case 'offshore': return `<p>Blanchis jusqu’à <b>${eur(RULES.OFFSHORE_CAP)}</b> de liquide en une opération, perte <b>−30 %</b>.</p><ul><li>1 utilisation par tour</li><li>Interdit si la Police est sur la case</li></ul>${S.police === i ? '<p class="warn">🚓 La Police est sur la case.</p>' : ''}`;
     case 'gourmand': { const pr = S.props[i]; return `<p>Prix : <b>${eur(c.price)}</b>.</p><p>Celui qui tombe dessus lance les dés et paie <b>total × 5 €</b> au propriétaire (CB).<br>Le propriétaire gagne un <b>crédit de blanchiment</b> = paiement × 2 (plafond ${eur(RULES.GOURMAND_CAP)}), utilisable sans perte.</p>${ownerLine(pr.owner !== null ? S.players[pr.owner] : null)}`; }
@@ -1955,11 +2001,11 @@ const RULES_HTML = `<h2>📜 Règles détaillées</h2><div class="rules">
 <h4>🎯 But</h4><p>Être le plus riche en <b>💳 CB</b> (argent légal) à la fin. Le <b>💵 liquide</b> (argent sale) ne sert pas à payer et ne compte pas : il faut le <b>blanchir</b>.</p>
 <h4>🚀 Départ</h4><ul><li>Chaque joueur commence avec <b>1 500 € CB</b>. Passer par le Départ : <b>+200 € CB</b>.</li><li>La Police démarre sur Simple visite.</li></ul>
 <h4>🔁 Un tour</h4><ol><li>Chaque joueur, à son tour : <b>vente automatique</b> (chacun de ses quartiers vend 2 jetons → payé en liquide), puis il lance les dés et résout la case. Il peut blanchir ou revendre avant/après.</li><li>Quand <b>tous les joueurs ont joué</b> : <b>tour de la Police</b>, le dé Police est lancé une fois.</li></ol>
-<h4>📍 Quartiers</h4><ul><li>Achat en CB. Pas de loyer fixe : <b>c’est le produit qui rapporte</b>.</li><li>Un quartier stocke <b>un seul produit</b> à la fois.</li><li>Un adversaire qui tombe sur ton quartier approvisionné t’achète 1 jeton : il paie en CB, tu touches du <b>liquide</b>.</li><li><b>Ville complète</b> (tous les quartiers d’une ville) : prix <b>×2</b>.</li></ul>
+<h4>📍 Quartiers</h4><ul><li>Achat en CB. Un quartier stocke <b>un seul produit</b> à la fois.</li><li>Un adversaire qui s’arrête chez toi paie un <b>loyer</b> = 20 % du prix du quartier (×2 si tu as toute la ville). Il paie en CB, tu touches du <b>liquide</b>.</li><li>S’il y a du stock, il t’achète en plus <b>1 jeton</b> (même principe).</li><li><b>Ville complète</b> (tous les quartiers d’une ville) : loyers et prix des produits <b>×2</b>.</li><li>Revendre un quartier : 50 % du prix, payé en <b>liquide</b>.</li></ul>
 <h4>📦 Approvisionnement</h4><table><tr><th>Case</th><th>Lot</th><th>Prix</th><th>Stock max</th></tr><tr><td>🏎️ Go-Fast du Rif</td><td>5 🟢</td><td>50 €</td><td>8</td></tr><tr><td>✈️ Avion Cargo Caraïbes</td><td>4 🔵</td><td>100 €</td><td>6</td></tr><tr><td>🚢 Porte-Conteneurs Colombie</td><td>3 🔴</td><td>150 €</td><td>4</td></tr></table>
-<p>1 lot par quartier et par tour. Le stock max réel = le plus petit entre le max du produit et le max du quartier.</p>
+<p>Tu peux te faire livrer quand tu <b>t’arrêtes</b> sur la case… ou simplement quand tu <b>passes</b> dessus. 1 lot par quartier et par tour. Le stock max réel = le plus petit entre le max du produit et le max du quartier.</p>
 <h4>🧼 Blanchiment</h4><ul><li><b>Banque</b> (hors plateau) : 200 €/tour, sans perte.</li><li><b>Entreprise</b> (1 max) : Rénovation 300 € −10 % · Garage 250 € −15 % · Kebab 200 € −20 % · Laverie 150 € −25 %.</li><li><b>Banques offshore</b> (quand tu tombes dessus) : 500 € max, −30 %, interdit si la Police y est.</li><li><b>Crédit Le Gourmand</b> : sans perte.</li></ul>
-<h4>🍔 Le Gourmand · 🐎 PMU</h4><ul><li>Le Gourmand : le visiteur lance les dés et paie total × 5 € au proprio, qui gagne un crédit de blanchiment = paiement × 2 (plafond 300 €).</li><li>PMU : mise 100 €, choisis 1 à 6, lance un dé. Bon numéro = 500 €.</li></ul>
+<h4>🍔 Le Gourmand · 🐎 PMU</h4><ul><li>Le Gourmand : le visiteur lance les dés et paie total × 5 € au proprio, qui gagne un crédit de blanchiment = paiement × 2 (plafond 300 €).</li><li>PMU : mise 100 €, choisis 1 à 6, lance un dé. Bon numéro = 500 €.</li><li>Le PMU s’achète (200 €) : son patron touche 10 € sur chaque pari des autres et perd 50 € quand quelqu’un gagne.</li></ul>
 <h4>🚓 Police (une fois par tour, quand tout le monde a joué)</h4><ul><li><b>0 / +1 / +2</b> : la Police avance. Si elle s’arrête sur un quartier, son <b>stock est saisi</b>. Tant qu’elle y stationne, il ne vend rien.</li><li><b>🔍 Enquête</b> : le joueur <b>le plus proche du pion Police</b> est contrôlé (égalité → celui qui a le plus de liquide).</li><li><b>🚨 Descente</b> : le quartier approvisionné le plus proche est saisi.</li><li><b>💥 Bavure</b> : le joueur <b>le plus proche du pion Police</b> saute son prochain tour.</li><li>Un joueur en prison ou qui saute déjà son tour n’est pas visé.</li><li><b>Contrôle</b> : si liquide &gt; 200 € → payer 100 € ou prison.</li></ul>
 <h4>⛓️ Prison</h4><p>La case <b>Prison</b> (coin en haut à droite) t’envoie dans la cellule du coin <b>Simple visite</b>. 1 tour sauté, tout le liquide est saisi, les ventes automatiques continuent.</p>
 <h4>🏁 Fin</h4><p>Nombre de tours atteint, ou un joueur ruiné → le joueur avec le plus de <b>CB</b> gagne.</p>
@@ -1986,11 +2032,11 @@ const SLIDES = [
     x: `<ol><li><b>Vente automatique</b> : chacun de tes quartiers vend 2 jetons → du liquide.</li><li><b>Lance les dés</b>, avance et résous la case.</li><li>Pendant ton tour, <b>blanchis</b> ou <b>revends</b> quand tu veux.</li><li>Quand tout le monde a joué : <b>tour de la Police</b> 🚓.</li></ol>` },
   { t: 'Quartiers & villes', c: '#f77f00',
     sc: `<div class="sc-cards"><div class="qc" style="--b:#e63946;--d:0s"><b></b>GOUTTE-D’OR<small>220 €</small></div><div class="qc" style="--b:#e63946;--d:.2s"><b></b>LA CHAPELLE<small>240 €</small></div><div class="qc" style="--b:#e63946;--d:.4s"><b></b>CLIGNAN&shy;COURT<small>260 €</small></div><div class="crown">👑<span>×2</span></div></div>`,
-    x: `Achète un quartier en CB. Pas de loyer : <b>c’est le produit qui rapporte</b>.<br>Un adversaire qui s’arrête chez toi t’achète <b>1 jeton</b> : il paie en CB, tu touches du <b>liquide</b>.<br>👑 Toute la ville à toi = prix de vente <b>×2</b>.` },
+    x: `Achète un quartier en CB. Un adversaire qui s’arrête chez toi paie un <b>loyer</b> (20 % du prix) et t’achète <b>1 jeton</b> s’il y a du stock : tu touches du <b>liquide</b>.<br>👑 Toute la ville à toi = loyers et prix <b>×2</b>.` },
   { t: 'S’approvisionner', c: '#2ecc71',
     sc: `<div class="sc-lane l1"><span>🏎️</span></div><div class="sc-lane l2"><span>✈️</span></div><div class="sc-lane l3"><span>🚢</span></div>`,
     x: `<table class="mini-t"><tr><td>🏎️ Go-Fast du Rif</td><td>5 🟢</td><td>50 €</td><td>max 8</td></tr><tr><td>✈️ Avion Cargo</td><td>4 🔵</td><td>100 €</td><td>max 6</td></tr><tr><td>🚢 Porte-Conteneurs</td><td>3 🔴</td><td>150 €</td><td>max 4</td></tr></table>
-       Arrête-toi sur une de ces cases pour livrer tes quartiers : <b>1 lot par quartier et par tour</b>, un seul produit par quartier.` },
+       Arrête-toi <b>ou passe</b> sur une de ces cases pour livrer tes quartiers : <b>1 lot par quartier et par tour</b>, un seul produit par quartier.` },
   { t: 'Blanchir son liquide', c: '#7dff6a',
     sc: `<div class="sc-wash"><span class="fall">💵</span><div class="machine">🏦</div><span class="out">💳</span></div>`,
     x: `<ul><li>🏦 <b>Banque</b> : 200 €/tour, sans perte.</li><li>🏗️🚗🥙🧺 <b>Entreprise</b> (1 max) : de 300 € −10 % à 150 € −25 %.</li><li>🌴🏔️ <b>Banque offshore</b> (si tu tombes dessus) : 500 € max, −30 %.</li><li>🍔 <b>Crédit Le Gourmand</b> : sans perte.</li></ul>Plus de <b>200 € de liquide</b> sur toi = danger en cas de contrôle !` },
@@ -2002,7 +2048,7 @@ const SLIDES = [
     x: `<b>⛓️ Prison</b> : 1 tour sauté et tout ton liquide est saisi (tes quartiers continuent de vendre).<br><b>🎤 Street Cred</b> : coups de chance… et galères de la rue. <b>⚖️ Mandat & Police</b> : la justice s’en mêle.<br>Certaines cartes se gardent : 🕳️ Planque, 📜 Vice de procédure, 🎁 Fournisseur sympa.` },
   { t: 'PMU & Le Gourmand', c: '#ff9f43',
     sc: `<div class="sc-pmu"><span class="horse">🐎</span><span class="burger">🍔</span></div>`,
-    x: `<b>🐎 PMU</b> : mise 100 €, annonce un numéro de 1 à 6 et lance le dé. Bon numéro = <b>500 €</b> !<br><b>🍔 Le Gourmand</b> : le visiteur paie <b>total des dés × 5 €</b> au propriétaire, qui gagne en plus un crédit de blanchiment sans perte.` },
+    x: `<b>🐎 PMU</b> : mise 100 €, annonce un numéro de 1 à 6 et lance le dé. Bon numéro = <b>500 €</b> ! Achète-le (200 €) pour toucher 10 € sur chaque pari.<br><b>🍔 Le Gourmand</b> : le visiteur paie <b>total des dés × 5 €</b> au propriétaire, qui gagne en plus un crédit de blanchiment sans perte.` },
   { t: 'Fin de partie', c: '#ffd23f',
     sc: `<div class="sc-win"><span class="trophy">🏆</span>${Array.from({ length: 18 }, (_, k) => `<i style="--x:${(k * 53) % 100}%;--d:${(k % 6) * .25}s;--c:${COLORS[k % 6]}"></i>`).join('')}</div>`,
     x: `Après le nombre de tours choisi (ou si un joueur fait faillite) : <b>le plus riche en 💳 CB gagne</b>.<br>Le liquide non blanchi ne compte pas : pense à le laver avant la fin !` },
@@ -2185,7 +2231,7 @@ const NET = { mode: null, peer: null, conns: new Map(), conn: null, code: null, 
   seq: 0, rid: 0, pending: { ask: null, dlg: null }, askWait: null, dlgWait: null, dirty: false,
   lobby: [], lobbyRounds: 20, waiting: false, log: [], connMap: [], asks: new Map(), dlgs: new Map(), execWait: new Map(),
   joined: false, gameShown: false, ended: false, myTurn: false, retry: null };
-const PEER_PREFIX = 'lereseau-v3-';
+const PEER_PREFIX = 'lereseau-v4-';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const newCode = () => Array.from({ length: 4 }, () => CODE_CHARS[rnd(CODE_CHARS.length)]).join('');
 const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 16);
@@ -2603,7 +2649,7 @@ function leaveOnline() {
     showGame(); gameLoop();
   };
   const saved = loadSave();
-  if (saved && saved.v === 3 && !saved.over) {
+  if (saved && saved.v === 4 && !saved.over) {
     const b = $('#resumeBtn'); b.hidden = false;
     b.textContent = `↩️ Reprendre la partie (${saved.players.map(p => p.name).join(', ')} — tour ${saved.round}${saved.room ? ` · en ligne, code ${saved.room}` : ''})`;
     b.onclick = () => { if (saved.room) hostResume(saved); else { S = saved; showGame(); gameLoop(); } };
