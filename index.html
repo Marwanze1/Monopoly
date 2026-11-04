@@ -1385,7 +1385,7 @@ function ensureDice(n) {
 /** Animation du lancer (identique sur tous les appareils : les valeurs sont connues d'avance). */
 async function animDice(vals) {
   const el = ensureDice(vals.length); if (!el) return;
-  diceRolling = true; SFX.play('dice');
+  diceRolling = true;
   el.querySelectorAll('.d3').forEach((d, k) => {
     const sp = diceSpin[k] = diceSpin[k] || { x: 0, y: 0 };
     sp.x += 2 + rnd(2); sp.y += 1 + rnd(3);
@@ -1409,7 +1409,7 @@ function ensurePdie() {
 }
 async function animPdie(fi) {
   const el = ensurePdie(); if (!el) return;
-  pdieRolling = true; SFX.play('dice');
+  pdieRolling = true;
   const d = el.querySelector('.d3'); d.classList.remove('idle');
   pSpin.x += 2 + rnd(2); pSpin.y += 1 + rnd(3);
   orient(d.querySelector('.cube'), fi + 1, pSpin); d.dataset.v = fi; toss(d);
