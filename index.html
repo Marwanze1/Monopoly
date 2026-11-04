@@ -340,6 +340,46 @@ select{background:#0f0f15;border:1px solid #333344;color:var(--txt);border-radiu
 #netbar.on{display:block}
 .spect{margin-top:12px;padding-top:9px;border-top:1px solid #33334a;display:flex;align-items:center;justify-content:space-between;gap:8px;color:#cfcfe0;font-size:14px}
 
+/* ---------- EFFETS : argent, annonces, réactions ---------- */
+.floatm{position:fixed;z-index:75;pointer-events:none;transform:translate(-50%,-50%);font-weight:900;font-size:17px;white-space:nowrap;
+  text-shadow:0 2px 0 #000,0 0 12px rgba(0,0,0,.8);animation:fup 1.5s ease-out forwards}
+.floatm.up{color:#3ddc84}.floatm.down{color:#ff5c7a}
+@keyframes fup{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}15%{opacity:1;transform:translate(-50%,-80%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-260%) scale(1)}}
+.splash{position:fixed;inset:0;z-index:72;display:flex;align-items:center;justify-content:center;pointer-events:none;
+  background:radial-gradient(circle,color-mix(in srgb,var(--sc) 30%,transparent),transparent 65%);animation:sbg 1.7s ease forwards}
+.splash>div{text-align:center;animation:spop 1.7s cubic-bezier(.2,1.4,.4,1) forwards}
+.splash b{display:block;font-family:'Bebas Neue',Impact,sans-serif;font-weight:400;font-size:min(16vw,120px);line-height:.95;letter-spacing:3px;color:#fff;
+  text-shadow:0 0 0 #000,4px 4px 0 var(--sc),0 0 40px var(--sc);-webkit-text-stroke:2px #000}
+.splash small{display:inline-block;margin-top:8px;background:#000c;border:2px solid var(--sc);color:#fff;font-weight:800;font-size:min(4.6vw,22px);padding:4px 14px;border-radius:999px}
+@keyframes spop{0%{opacity:0;transform:scale(2.6) rotate(-8deg)}18%{opacity:1;transform:scale(1) rotate(-3deg)}80%{opacity:1;transform:scale(1.05) rotate(-3deg)}100%{opacity:0;transform:scale(.8) rotate(-3deg)}}
+@keyframes sbg{0%,80%{opacity:1}100%{opacity:0}}
+.emobar{display:flex;justify-content:space-between;gap:4px;background:var(--panel);border:1px solid #2a2a38;border-radius:12px;padding:5px 6px}
+.emobar button{flex:1;background:none;border:none;font-size:21px;line-height:1;padding:4px 0;border-radius:8px;transition:transform .12s,background .12s}
+.emobar button:hover{background:#2a2a38;transform:scale(1.2)}
+.emobar button:active{transform:scale(.9)}
+.emofly{position:fixed;z-index:76;pointer-events:none;font-size:46px;line-height:1;transform:translate(-50%,-50%);animation:efly 1.8s ease-out forwards;text-align:center;filter:drop-shadow(0 4px 6px rgba(0,0,0,.6))}
+.emofly small{display:block;font-size:12px;font-weight:800;color:#fff;background:#000b;border-radius:6px;padding:1px 6px;margin-top:2px}
+.emofly.small{font-size:30px}
+@keyframes efly{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}15%{opacity:1;transform:translate(-50%,-70%) scale(1.25)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-220%) scale(1)}}
+/* Fin de partie : distinctions + courbe */
+.awards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0}
+.aw{display:flex;gap:8px;align-items:center;background:#22222e;border-radius:10px;padding:8px 10px}
+.aw .ai{font-size:26px}
+.aw small{display:block;color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.aw b{display:flex;align-items:center;gap:5px;font-size:15px}
+.aw b i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.aw .dim{font-size:12px}
+.cbchart{position:relative;margin:6px 0 4px}
+.cbchart h3{margin:0 0 4px;font-size:14px;color:var(--txt)}
+.cbchart .lg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:#cfcfe0;margin-bottom:4px}
+.cbchart .lg span{display:inline-flex;align-items:center;gap:5px}
+.cbchart .lg i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.cbchart svg{width:100%;height:auto;display:block;touch-action:pan-y}
+.cbchart .tip{position:absolute;pointer-events:none;background:#0f0f18f2;border:1px solid #33334a;border-radius:8px;padding:6px 9px;font-size:12px;color:var(--txt);white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.5);display:none}
+.cbchart .tip div{display:flex;align-items:center;gap:6px;justify-content:space-between}
+.cbchart .tip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.cbchart .tip .h{color:var(--dim);margin-bottom:3px;display:block}
+
 @media (max-width:1000px){
   :root{--S:min(calc(100vw - 16px),900px)}
   #game{flex-direction:column;align-items:center;height:auto}
@@ -582,7 +622,7 @@ const STREET = [
 ];
 
 const MANDAT = [
-  { t: 'Garde à vue', i: '🚔', x: 'Les bleus t’attendaient en bas de chez toi. <b>Va directement en prison</b> (ton liquide est saisi).',
+  { t: 'Garde à vue', i: '🚔', x: 'Les keuf t’attendaient en bas de chez toi. <b>Va directement en prison</b> (ton liquide est saisi).',
     fx: p => goToPrison(p, 'Garde à vue') },
   { t: 'Perquisition', i: '🔎', x: 'Perquisition à 6 h du matin : <b>le stock de ton quartier le plus fourni est saisi</b>.',
     fx: async p => { const i = mostStocked(p.id);
@@ -642,6 +682,8 @@ function newGame(cfg) {
     props: {}, ent: {}, police: VISIT_IDX, cur: 0, round: 1, maxRounds: cfg.maxRounds, turnNo: 0,
     decks: { street: shuffle([...STREET.keys()]), mandat: shuffle([...MANDAT.keys()]) },
     log: [], logN: 0, over: false, overReason: '', dice: [1, 1], pdie: null, t: null, room: cfg.room || null,
+    stats: cfg.players.map(() => ({ sales: 0, laund: 0, prison: 0, seized: 0 })),
+    hist: [cfg.players.map(() => RULES.START_CB)],
   };
   BOARD.forEach((c, i) => { if (c.type === 'quartier' || c.type === 'gourmand') S.props[i] = { owner: null, product: null, stock: 0, last: -1 }; });
   Object.keys(ENTERPRISES).forEach(k => S.ent[k] = { owner: null, closed: 0 });
@@ -788,7 +830,7 @@ function doLaunder(p, key, amount) {
   amount = Math.max(0, Math.min(Math.floor(amount), src.cap, p.liq));
   if (!amount) return 0;
   const got = Math.round(amount * (1 - src.loss));
-  p.liq -= amount; p.cb += got;
+  p.liq -= amount; p.cb += got; ST(p).laund += amount;
   if (key === 'bank') S.t.bank += amount;
   else if (key === 'credit') p.credit -= amount;
   else if (key === 'ent') S.t.ent += amount;
@@ -816,6 +858,7 @@ async function gameLoop() {
       S.policePhase = false;
       log(`<span class="sep">— Tour ${S.round}${S.maxRounds ? '/' + S.maxRounds : ''} · ${esc(p.name)} —</span>`);
       render();
+      if (S.cur === 0 && S.maxRounds && S.round === S.maxRounds && S.maxRounds > 1) { splash('⏳ DERNIER TOUR', 'Blanchissez : seule la CB compte !', '#ffd23f', 'turn'); await sleep(1300); }
       await sleep(200);
       await autoSale(p);
       if (S.over) break;
@@ -856,6 +899,7 @@ function upkeep(p) {
 function nextPlayer() {
   const nx = (S.cur + 1) % S.players.length;
   if (nx === 0) {
+    (S.hist = S.hist || []).push(S.players.map(p => p.cb));
     S.round++;
     if (S.maxRounds && S.round > S.maxRounds) { S.over = true; S.overReason = `Les ${S.maxRounds} tours sont joués.`; }
   }
@@ -910,6 +954,7 @@ async function playerTurn(p) {
 async function autoSale(p) {
   const { total, parts } = sellFromQuartiers(p, RULES.AUTO_SALE);
   if (total > 0) {
+    ST(p).sales += total;
     log(`💸 Vente auto de ${P(p)} : +${eur(total)} en liquide (${parts.join(', ')})`);
     toast(`💸 Vente automatique : +${eur(total)} en liquide`, p.color);
     render(); await sleep(450);
@@ -983,7 +1028,7 @@ async function landQuartier(p, i) {
   if (pr.owner === null) {
     const ok = await offerBuy(p, `📍 ${c.name}`, ficheHTML(i), c.price, city.color);
     if (ok) { p.cb -= c.price; pr.owner = p.id; log(`🏠 ${P(p)} achète <b>${c.name}</b> (${eur(c.price)}).`);
-      if (ownsCity(p.id, c.city)) { log(`👑 ${P(p)} contrôle toute la ville de <b>${city.name}</b> : prix ×2 !`); toast(`👑 Ville complète : ${city.name} — prix ×2 !`, p.color); } }
+      if (ownsCity(p.id, c.city)) { log(`👑 ${P(p)} contrôle toute la ville de <b>${city.name}</b> : prix ×2 !`); splash('👑 VILLE COMPLÈTE', `${esc(p.name)} tient ${city.name} — prix ×2`, p.color, 'crown'); } }
     return;
   }
   if (pr.owner === p.id) { log(`🏠 ${P(p)} passe dans son quartier ${c.name}.`); return; }
@@ -994,6 +1039,7 @@ async function landQuartier(p, i) {
   const ok = await pay(p, price, o, `achat à ${c.name}`, true);
   if (!ok) return;
   pr.stock--; if (!pr.stock) pr.product = null;
+  ST(o).sales += price;
   log(`💊 ${P(p)} achète 1 ${prod.icon} ${prod.name} à ${c.name} : ${eur(price)} CB → ${P(o)} (+${eur(price)} liquide)`);
   toast(`${prod.icon} ${esc(p.name)} paie ${eur(price)} à ${esc(o.name)}`, o.color);
   render(); await sleep(500);
@@ -1192,9 +1238,10 @@ async function goToPrison(p, why) {
     if (use) { p.vice--; log(`📜 ${P(p)} sort sa carte Vice de procédure : pas de prison !`); return false; }
   }
   const seized = p.liq;
-  p.liq = 0; p.pos = PRISON_IDX; p.skip += 1; p.inPrison = true;
+  p.liq = 0; p.pos = PRISON_IDX; p.skip += 1; p.inPrison = true; ST(p).prison++;
   log(`⛓️ ${P(p)} part en prison (${why}). Liquide saisi : ${eur(seized)}.`);
   render();
+  splash('⛓️ EN PRISON', `${esc(p.name)} · ${esc(why)}`, '#ff3b5c', 'jail'); await sleep(900);
   await info('⛓️ Direction la prison', `${P(p)} est incarcéré (${why}).<br>Liquide saisi : <b>${eur(seized)}</b><br>Il saute son prochain tour. Ses quartiers continuent de vendre.`, { color: '#ff3b5c', who: p });
   return true;
 }
@@ -1232,6 +1279,7 @@ async function policeAction() {
     if (!p) log('💥 Bavure… mais tout le monde est déjà à l’ombre.');
     else {
       p.skip += 1;
+      splash('💥 BAVURE !', `${esc(p.name)} est embarqué par erreur`, '#ff9f43', 'jail'); await sleep(900);
       log(`💥 Bavure ! ${P(p)}, le plus proche de la Police, est embarqué par erreur : il saute son prochain tour.`);
       render();
       await info('💥 Bavure !', `${P(p)} était le plus proche de la Police : il est embarqué au commissariat par erreur.<br>Il <b>saute son prochain tour</b>.`, { color: '#ff9f43', who: p });
@@ -1264,9 +1312,11 @@ async function seize(i, why) {
     return info(`🕳️ ${why} à ${BOARD[i].name}`, `La Police fouille partout… mais la <b>Planque</b> de ${P(o)} a tenu ! Stock sauvé.`, { color: '#2ecc71', who: o });
   }
   const lost = `${pr.stock} ${PRODUCTS[pr.product].icon}`;
+  ST(o).seized += pr.stock;
   pr.stock = 0; pr.product = null;
   log(`🚨 ${why} à ${BOARD[i].name} : stock de ${P(o)} saisi (${lost}).`);
   render();
+  splash('🚨 DESCENTE !', `${BOARD[i].name} · stock de ${esc(o.name)} saisi`, '#ff3b5c', 'siren'); await sleep(900);
   await info(`🚨 ${why} à ${BOARD[i].name}`, `La Police saisit tout le stock de ${P(o)} : <b>${lost}</b>`, { color: '#ff3b5c', who: o });
 }
 
@@ -1295,7 +1345,7 @@ function ensureDice(n) {
 /** Animation du lancer (identique sur tous les appareils : les valeurs sont connues d'avance). */
 async function animDice(vals) {
   const el = ensureDice(vals.length); if (!el) return;
-  diceRolling = true;
+  diceRolling = true; SFX.play('dice');
   el.querySelectorAll('.d3').forEach((d, k) => {
     const sp = diceSpin[k] = diceSpin[k] || { x: 0, y: 0 };
     sp.x += 2 + rnd(2); sp.y += 1 + rnd(3);
@@ -1319,7 +1369,7 @@ function ensurePdie() {
 }
 async function animPdie(fi) {
   const el = ensurePdie(); if (!el) return;
-  pdieRolling = true;
+  pdieRolling = true; SFX.play('dice');
   const d = el.querySelector('.d3'); d.classList.remove('idle');
   pSpin.x += 2 + rnd(2); pSpin.y += 1 + rnd(3);
   orient(d.querySelector('.cube'), fi + 1, pSpin); d.dataset.v = fi; toss(d);
@@ -1356,7 +1406,7 @@ function buildBoard() {
     <div class="tape"><span>LE RÉSEAU</span></div>`;
   b.appendChild(deco);
   const center = document.createElement('div'); center.id = 'center';
-  center.innerHTML = `<div class="ctop"><button class="mini" id="rulesBtn2">📖 Règles</button>${NET.mode !== 'client' ? '<button class="mini" id="quitBtn">🏁 Terminer</button>' : ''}${NET.mode ? `<span class="mini">🌐 ${esc(NET.code || '')}</span>` : ''}</div>
+  center.innerHTML = `<div class="ctop"><button class="mini" id="sndBtn" title="Activer / couper le son">${SFX.on ? '🔊' : '🔇'}</button><button class="mini" id="rulesBtn2">📖 Règles</button>${NET.mode !== 'client' ? '<button class="mini" id="quitBtn">🏁 Terminer</button>' : ''}${NET.mode ? `<span class="mini">🌐 ${esc(NET.code || '')}</span>` : ''}</div>
     <div id="roundInfo"></div><div id="banner"></div>
     <div class="dicezone"><div id="dice"></div><div id="pdie"></div></div>
     <div id="actions"></div>
@@ -1364,7 +1414,11 @@ function buildBoard() {
     <div id="toasts"></div>`;
   b.appendChild(center);
   $('#side').innerHTML = `<div class="sidehead" id="sidehead"></div><div id="pcards"></div>
+    ${NET.mode ? `<div class="emobar" title="Réagir (tout le monde le voit)">${EMOTES.map(e => `<button data-e="${e}">${e}</button>`).join('')}</div>` : ''}
     <section id="logbox"><div class="lh">📜 Historique</div><div id="log"></div></section>`;
+  document.querySelectorAll('.emobar button').forEach(b => b.onclick = () => { b.blur(); sendEmote(b.dataset.e); });
+  $('#sndBtn').onclick = () => { $('#sndBtn').textContent = SFX.toggle() ? '🔊' : '🔇'; $('#sndBtn').blur(); };
+  FXPREV = null;
   $('#rulesBtn2').onclick = () => showRules();
   if ($('#quitBtn')) $('#quitBtn').onclick = quitGame;
   // petite animation d'arrivée du plateau
@@ -1420,9 +1474,10 @@ function render() {
     if (el.innerHTML !== v.html) el.innerHTML = v.html;
   }
   renderCenter(); renderPlayers(); renderActions(); renderLog(); renderDice(); renderPdie();
+  fxDiff();
   if (NET.mode) {
     const mt = canAct();
-    if (mt && !NET.myTurn) { try { navigator.vibrate && navigator.vibrate(150); } catch (e) {} }
+    if (mt && !NET.myTurn) { SFX.play('turn'); try { navigator.vibrate && navigator.vibrate(150); } catch (e) {} }
     NET.myTurn = mt;
     document.title = mt ? '🎲 À toi de jouer ! — LE RÉSEAU' : 'LE RÉSEAU — en ligne';
   }
@@ -1519,11 +1574,144 @@ function toast(html, color, localOnly) {
 }
 function log(html) { if (!S) return; S.logN = (S.logN || 0) + 1; S.log.unshift(html); if (S.log.length > 150) S.log.length = 150; renderLog(); netDirty(); }
 
+/* =====================================================================
+   SONS (synthétisés, aucun fichier à charger)
+   ===================================================================== */
+const SFX = (() => {
+  let ctx = null, on = true;
+  try { on = localStorage.getItem('lereseau.sound') !== '0'; } catch (e) {}
+  const ac = () => {
+    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    return ctx;
+  };
+  const tone = (f, d, o = {}) => {
+    const c = ctx, t = c.currentTime + (o.at || 0), g = c.createGain(), os = c.createOscillator();
+    os.type = o.type || 'sine'; os.frequency.setValueAtTime(f, t);
+    if (o.slide) os.frequency.exponentialRampToValueAtTime(Math.max(30, f + o.slide), t + d);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.v || .12, t + .012); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    os.connect(g).connect(c.destination); os.start(t); os.stop(t + d + .05);
+  };
+  const noise = (d, o = {}) => {
+    const c = ctx, t = c.currentTime + (o.at || 0), n = Math.ceil(c.sampleRate * d), b = c.createBuffer(1, n, c.sampleRate), a = b.getChannelData(0);
+    for (let k = 0; k < n; k++) a[k] = (Math.random() * 2 - 1) * (1 - k / n);
+    const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = b; f.type = 'highpass'; f.frequency.value = o.hp || 800; g.gain.value = o.v || .2;
+    s.connect(f).connect(g).connect(c.destination); s.start(t);
+  };
+  const LIB = {
+    dice() { for (let k = 0; k < 7; k++) noise(.035, { at: k * .075 + Math.random() * .03, v: .35, hp: 1800 }); noise(.06, { at: .62, v: .3, hp: 900 }); },
+    step() { tone(560, .05, { type: 'triangle', v: .05 }); },
+    cop() { tone(300, .06, { type: 'square', v: .03 }); },
+    cash() { tone(1320, .07, { type: 'square', v: .045 }); tone(1980, .28, { type: 'square', v: .045, at: .07 }); },
+    pay() { tone(330, .18, { type: 'sawtooth', v: .05, slide: -140 }); },
+    siren() { for (let k = 0; k < 4; k++) tone(k % 2 ? 700 : 940, .24, { type: 'sawtooth', v: .045, at: k * .24 }); },
+    card() { noise(.16, { v: .18, hp: 2600 }); tone(900, .1, { type: 'triangle', v: .05, at: .05, slide: 500 }); },
+    jail() { tone(98, .5, { type: 'square', v: .1, slide: -30 }); noise(.35, { v: .3, hp: 150 }); tone(196, .3, { type: 'square', v: .05, at: .12 }); },
+    crown() { [784, 988, 1175, 1568].forEach((f, k) => tone(f, .22, { type: 'triangle', v: .09, at: k * .09 })); },
+    turn() { tone(660, .12, { v: .12 }); tone(990, .3, { v: .12, at: .12 }); },
+    pop() { tone(520, .09, { type: 'triangle', v: .1, slide: 700 }); },
+    win() { [523, 659, 784, 1047, 784, 1047].forEach((f, k) => tone(f, k === 5 ? .7 : .2, { type: 'triangle', v: .11, at: k * .14 })); },
+  };
+  let last = {};
+  return {
+    get on() { return on; },
+    play(n) {
+      if (!on || FAST() || !LIB[n]) return;
+      const now = performance.now(); if (last[n] && now - last[n] < 60) return; last[n] = now;
+      if (!ac() || ctx.state !== 'running') return;
+      try { LIB[n](); } catch (e) {}
+    },
+    toggle() { on = !on; try { localStorage.setItem('lereseau.sound', on ? '1' : '0'); } catch (e) {} if (on) { ac(); LIB.pop && ctx && this.play('pop'); } return on; },
+    unlock() { if (on) ac(); },
+  };
+})();
+document.addEventListener('pointerdown', () => SFX.unlock(), { capture: true });
+document.addEventListener('keydown', () => SFX.unlock(), { capture: true });
+
+/* ---------- Effets qui suivent l'état (argent qui vole, pas des pions…) — marchent aussi chez les invités ---------- */
+let FXPREV = null;
+function floatMoney(el, d, ic) {
+  if (!el || !d) return;
+  const r = el.getBoundingClientRect(); if (!r.width) return;
+  const f = document.createElement('div');
+  f.className = 'floatm ' + (d > 0 ? 'up' : 'down');
+  f.textContent = `${ic} ${d > 0 ? '+' : '−'}${eur(Math.abs(d))}`;
+  f.style.left = (r.left + r.width / 2) + 'px'; f.style.top = (r.top + r.height / 2) + 'px';
+  document.body.appendChild(f); setTimeout(() => f.remove(), 1600);
+}
+function fxDiff() {
+  if (!S) return;
+  const snap = { cur: S.cur, police: S.police, p: S.players.map(p => ({ pos: p.pos, cb: p.cb, liq: p.liq })) };
+  const pv = FXPREV; FXPREV = snap;
+  if (!pv || pv.p.length !== snap.p.length) return;
+  const cards = document.querySelectorAll('#pcards .pcard');
+  let gain = false, loss = false, moved = false;
+  snap.p.forEach((n, k) => {
+    const o = pv.p[k], dc = n.cb - o.cb, dl = n.liq - o.liq;
+    if (n.pos !== o.pos) moved = true;
+    if (dc) { floatMoney(cards[k] && cards[k].querySelector('.cbv'), dc, '💳'); if (dc > 0) gain = true; else loss = true; }
+    if (dl) { floatMoney(cards[k] && cards[k].querySelector('.liqv'), dl, '💵'); if (dl > 0) gain = true; }
+  });
+  if (gain) SFX.play('cash'); else if (loss) SFX.play('pay');
+  if (moved) SFX.play('step');
+  if (snap.police !== pv.police) SFX.play('cop');
+  if (snap.cur !== pv.cur && !S.over && !NET.mode) SFX.play('turn');
+}
+
+/* ---------- Grosses annonces plein écran ---------- */
+function splash(big, small, color, snd) {
+  if (FAST()) return;
+  if (NET.mode === 'host') bcast({ t: 'fx', k: 'splash', b: big, s: small, c: color, snd });
+  showSplash(big, small, color, snd);
+}
+function showSplash(big, small, color, snd) {
+  if (FAST()) return;
+  document.querySelectorAll('.splash').forEach(e => e.remove());
+  const el = document.createElement('div'); el.className = 'splash';
+  el.style.setProperty('--sc', color || '#ffd23f');
+  el.innerHTML = `<div><b>${big}</b>${small ? `<small>${small}</small>` : ''}</div>`;
+  document.body.appendChild(el); setTimeout(() => el.remove(), 1750);
+  SFX.play(snd);
+}
+
+/* ---------- Réactions entre joueurs (en ligne) ---------- */
+const EMOTES = ['😂', '🔥', '💸', '🚔', '😱', '👏', '😈', '🤡'];
+let emoT = 0;
+function sendEmote(e) {
+  if (!S || !NET.mode || !EMOTES.includes(e)) return;
+  const now = Date.now(); if (now - emoT < 700) return; emoT = now;
+  if (NET.mode === 'client') return netSendHost({ t: 'emo', e });
+  const p = isLocal(cur()) ? cur() : S.players.find(isLocal);
+  if (p) hostEmote(p.id, e);
+}
+function hostEmote(pid, e) { bcast({ t: 'fx', k: 'emo', pid, e }); showEmote(pid, e); }
+function showEmote(pid, e) {
+  if (FAST() || !S || !S.players[pid] || !EMOTES.includes(e)) return;
+  SFX.play('pop');
+  const p = S.players[pid];
+  [document.querySelectorAll('#pcards .pcard')[pid], document.getElementById('c' + p.pos)].forEach((el, k) => {
+    if (!el) return;
+    const r = el.getBoundingClientRect(); if (!r.width) return;
+    const f = document.createElement('div'); f.className = 'emofly' + (k ? ' small' : '');
+    f.innerHTML = k ? e : `${e}<small>${esc(p.name)}</small>`;
+    f.style.left = (r.left + r.width * (k ? .5 : .8)) + 'px'; f.style.top = (r.top + r.height * .5) + 'px';
+    document.body.appendChild(f); setTimeout(() => f.remove(), 1850);
+  });
+}
+
+/* ---------- Statistiques de partie ---------- */
+function ST(p) {
+  if (!S.stats) S.stats = S.players.map(() => ({ sales: 0, laund: 0, prison: 0, seized: 0 }));
+  return S.stats[p.id];
+}
+
 /* ---------------- Modales ---------------- */
 function openModal(html, opts = {}) {
   const wrap = document.createElement('div'); wrap.className = 'overlay';
   wrap.innerHTML = `<div class="modal ${opts.wide ? 'wide' : ''}" style="--mc:${opts.color || '#ffd23f'}">${html}</div>`;
   $('#modal-root').appendChild(wrap);
+  if (html.includes('class="card ')) SFX.play('card');
   return wrap;
 }
 const closeModal = w => w.remove();
@@ -1835,10 +2023,84 @@ function showEnd() {
     <div class="rank">${rank.map((p, k) => `<div class="rk ${k === 0 ? 'win' : ''}" style="--c:${p.color}"><span class="md">${medals[k] || (k + 1) + '.'}</span><b>${esc(p.name)}</b>${p.ruined ? ' <span class="dim">(ruiné)</span>' : ''}<span class="cbv">💳 ${eur(p.cb)}</span>
       <small class="dim">💵 ${eur(p.liq)} de liquide non blanchi (ne compte pas) · ${quartiersOf(p.id).length} quartier(s)</small></div>`).join('')}</div>
     <p style="font-size:18px">👑 <b style="color:${rank[0].color}">${esc(rank[0].name)}</b> est le boss du réseau !</p>
+    ${awardsHTML()}${cbChartHTML()}
     <div class="mbtns"><button class="btn" data-a="board">Voir le plateau</button><button class="btn primary" data-a="new">Nouvelle partie</button></div>`, { color: '#ffd23f', wide: true });
   w.querySelector('[data-a=board]').onclick = () => closeModal(w);
   w.querySelector('[data-a=new]').onclick = () => { try { sessionStorage.removeItem('lereseau.join'); } catch (e) {} location.href = location.pathname; };
-  confetti();
+  wireChart(w);
+  confetti(); SFX.play('win');
+}
+
+/* ---------- Distinctions de fin de partie ---------- */
+function awardsHTML() {
+  if (!S.stats) return '';
+  const A = [['sales', '💸', 'Meilleur dealer', v => `${eur(v)} de ventes`],
+             ['laund', '🧼', 'Roi du blanchiment', v => `${eur(v)} blanchis`],
+             ['prison', '⛓️', 'Abonné de la prison', v => `${v} séjour${v > 1 ? 's' : ''}`],
+             ['seized', '🚨', 'Le plus perquisitionné', v => `${v} doses saisies`]];
+  const out = A.map(([k, ic, t, f]) => {
+    let b = null;
+    S.players.forEach(p => { const v = (S.stats[p.id] || {})[k] || 0; if (v > 0 && (!b || v > S.stats[b.id][k])) b = p; });
+    return b ? `<div class="aw"><span class="ai">${ic}</span><div><small>${t}</small><b><i style="background:${b.color}"></i>${esc(b.name)}</b><span class="dim">${f(S.stats[b.id][k])}</span></div></div>` : '';
+  }).join('');
+  return out ? `<div class="awards">${out}</div>` : '';
+}
+
+/* ---------- Courbe de la CB tour par tour ---------- */
+const CH = { W: 560, H: 210, L: 52, R: 74, T: 12, B: 24 };
+function chartRows() {
+  const H = (S.hist || []).slice(), now = S.players.map(p => p.cb);
+  if (!H.length || H[H.length - 1].some((v, k) => v !== now[k])) H.push(now);
+  return H;
+}
+function cbChartHTML() {
+  const H = chartRows();
+  if (H.length < 2) return '';
+  const { W, H: Ht, L, R, T, B } = CH, n = H.length;
+  const max = Math.max(500, ...H.flat()), top = Math.ceil(max / 500) * 500;
+  const x = k => L + (W - L - R) * k / (n - 1), y = v => T + (Ht - T - B) * (1 - Math.max(0, v) / top);
+  const grid = [0, .5, 1].map(f => `<line x1="${L}" x2="${W - R}" y1="${y(top * f)}" y2="${y(top * f)}" stroke="#2c2c3c" stroke-width="1"/>
+    <text x="${L - 6}" y="${y(top * f) + 4}" text-anchor="end" font-size="11" fill="#9a9aab">${eur(top * f)}</text>`).join('');
+  const xl = [[0, 'Départ'], [n - 1, 'Fin']].concat(n > 4 ? [[Math.round((n - 1) / 2), `Tour ${Math.round((n - 1) / 2)}`]] : [])
+    .map(([k, t]) => `<text x="${x(k)}" y="${Ht - 6}" text-anchor="${k === 0 ? 'start' : k === n - 1 ? 'end' : 'middle'}" font-size="11" fill="#9a9aab">${t}</text>`).join('');
+  const lines = S.players.map((p, j) => `<polyline fill="none" stroke="${p.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"
+    points="${H.map((r, k) => `${x(k).toFixed(1)},${y(r[j]).toFixed(1)}`).join(' ')}"/>`).join('');
+  // étiquettes directes en bout de courbe (décalées pour ne pas se chevaucher)
+  let labels = '';
+  if (S.players.length <= 4) {
+    const ends = S.players.map((p, j) => ({ p, y: y(H[n - 1][j]) })).sort((a, b) => a.y - b.y);
+    for (let k = 1; k < ends.length; k++) if (ends[k].y - ends[k - 1].y < 13) ends[k].y = ends[k - 1].y + 13;
+    labels = ends.map(e => `<text x="${W - R + 8}" y="${e.y + 4}" font-size="11" font-weight="700" fill="#f1f1f4">${esc(e.p.name.slice(0, 10))}</text>`).join('');
+  }
+  const dots = S.players.map((p, j) => `<circle class="hd" data-j="${j}" r="4" fill="${p.color}" stroke="#16161e" stroke-width="2" style="display:none"/>`).join('');
+  return `<div class="cbchart"><h3>💳 La CB de chacun, tour après tour</h3>
+    <div class="lg">${S.players.map(p => `<span><i style="background:${p.color}"></i>${esc(p.name)}</span>`).join('')}</div>
+    <svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="Évolution de la CB de chaque joueur">${grid}${xl}
+      <line class="cx" y1="${T}" y2="${Ht - B}" stroke="#55556a" stroke-width="1" style="display:none"/>${lines}${labels}${dots}
+      <rect x="${L}" y="${T}" width="${W - L - R}" height="${Ht - T - B}" fill="transparent" class="hit"/></svg>
+    <div class="tip"></div></div>`;
+}
+function wireChart(root) {
+  const box = root.querySelector('.cbchart'); if (!box) return;
+  const svg = box.querySelector('svg'), tip = box.querySelector('.tip'), cx = svg.querySelector('.cx'), H = chartRows(), n = H.length;
+  const { W, H: Ht, L, R, T, B } = CH;
+  const top = Math.ceil(Math.max(500, ...H.flat()) / 500) * 500;
+  const x = k => L + (W - L - R) * k / (n - 1), y = v => T + (Ht - T - B) * (1 - Math.max(0, v) / top);
+  const hide = () => { tip.style.display = 'none'; cx.style.display = 'none'; svg.querySelectorAll('.hd').forEach(d => d.style.display = 'none'); };
+  svg.addEventListener('pointermove', e => {
+    const r = svg.getBoundingClientRect(), vx = (e.clientX - r.left) * W / r.width;
+    const k = Math.max(0, Math.min(n - 1, Math.round((vx - L) / (W - L - R) * (n - 1))));
+    cx.setAttribute('x1', x(k)); cx.setAttribute('x2', x(k)); cx.style.display = '';
+    svg.querySelectorAll('.hd').forEach(d => { const j = +d.dataset.j; d.setAttribute('cx', x(k)); d.setAttribute('cy', y(H[k][j])); d.style.display = ''; });
+    const rows = S.players.map((p, j) => ({ p, v: H[k][j] })).sort((a, b) => b.v - a.v);
+    tip.innerHTML = `<span class="h">${k === 0 ? 'Départ' : k === n - 1 ? 'Fin de partie' : `Après le tour ${k}`}</span>` +
+      rows.map(o => `<div><span><i style="background:${o.p.color}"></i> ${esc(o.p.name)}</span><b>${eur(o.v)}</b></div>`).join('');
+    tip.style.display = 'block';
+    const px = x(k) * r.width / W, br = box.getBoundingClientRect(), tw = tip.offsetWidth;
+    tip.style.left = Math.min(br.width - tw, Math.max(0, px + (px > br.width / 2 ? -tw - 12 : 12))) + 'px';
+    tip.style.top = (r.top - br.top + 16) + 'px';
+  });
+  svg.addEventListener('pointerleave', hide);
 }
 
 /* =====================================================================
@@ -1952,6 +2214,10 @@ function hostOnMsg(c, m) {
       W.apply(m.op); hostBroadcastState();
     }
     sendTo(c, { t: 'ack', rid: m.rid });
+  } else if (m.t === 'emo') {
+    const now = Date.now(); if (now - (c._emoT || 0) < 600) return; c._emoT = now;
+    const p = S.players.find(x => x.dev === c.cid);
+    if (p && EMOTES.includes(m.e)) hostEmote(p.id, m.e);
   }
 }
 function attachConn(c, cid) {
@@ -2155,6 +2421,7 @@ function clientOnMsg(m) {
     case 'fx':
       if (!NET.gameShown) break;
       if (m.k === 'dice') animDice(m.v); else if (m.k === 'pdie') animPdie(m.fi); else if (m.k === 'flash') flashCell(m.i);
+      else if (m.k === 'splash') showSplash(m.b, m.s, m.c, m.snd); else if (m.k === 'emo') showEmote(m.pid, m.e);
       break;
     case 'toast': toast(m.html, m.color); break;
     case 'end':
