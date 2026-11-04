@@ -362,6 +362,13 @@ select{background:#0f0f15;border:1px solid #333344;color:var(--txt);border-radiu
 .emofly.small{font-size:30px}
 @keyframes efly{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}15%{opacity:1;transform:translate(-50%,-70%) scale(1.25)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-220%) scale(1)}}
 /* Fin de partie : distinctions + courbe */
+/* Photo de la ville en fond des fiches de quartier */
+.modal:has(.fph){position:relative;isolation:isolate;background:#14141c}
+.modal:has(.fph)::before{content:'';position:absolute;inset:0;z-index:-1;background-image:var(--ph);background-size:cover;background-position:center;opacity:.28;filter:saturate(.85);
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 45%,rgba(0,0,0,.35) 100%);mask-image:linear-gradient(180deg,#000 0%,#000 45%,rgba(0,0,0,.35) 100%)}
+.fph{font-size:10px;color:#8a8a9c;text-align:right;margin:-4px 0 4px}
+.modal:has(.fph) .ft{background:#0d0d14b3;border-radius:8px}
+.awh{margin:14px 0 0;font-size:15px}
 .awards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0}
 .aw{display:flex;gap:8px;align-items:center;background:#22222e;border-radius:10px;padding:8px 10px}
 .aw .ai{font-size:26px}
@@ -484,7 +491,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
 const RULES = {
   START_CB: 1500, SALARY: 200, BANK_CAP: 200, CONTROL_LIMIT: 200, CONTROL_FINE: 100,
   PMU_BET: 100, PMU_WIN: 500, OFFSHORE_CAP: 500, OFFSHORE_LOSS: 0.30,
-  GOURMAND_PRICE: 150, GOURMAND_CAP: 300, TAX: 100, SELL_RATIO: 0.5, AUTO_SALE: 2,
+  GOURMAND_PRICE: 150, GOURMAND_CAP: 300, TAX: 200, SELL_RATIO: 0.5, AUTO_SALE: 2,
 };
 const COLORS = ['#ff4d6d', '#4dabff', '#3ddc84', '#ffd23f', '#c77dff', '#ff9f43'];
 
@@ -503,7 +510,28 @@ const CITIES = {
   paris18:   { name: 'Paris 18e',        label: 'Rouge',      color: '#e63946' },
   paris19:   { name: 'Paris 19e',        label: 'Jaune',      color: '#ffd60a' },
   trappes:   { name: 'Trappes',          label: 'Vert',       color: '#2dc653' },
+  mantes:    { name: 'Mantes-la-Jolie',  label: 'Bleu foncé', color: '#1f4fd1' },
 };
+
+/* Photos des villes (Wikimedia Commons, licences libres) — affichées en fond des fiches de quartier */
+const WM = 'https://upload.wikimedia.org/wikipedia/commons/thumb/';
+const CITY_PHOTOS = {
+  sarcelles: WM + '1/12/2018-0615-Flanades-008.jpg/500px-2018-0615-Flanades-008.jpg',
+  grigny:    WM + '5/5c/Grigny_Hotel-de-Ville.JPG/500px-Grigny_Hotel-de-Ville.JPG',
+  aulnay:    WM + 'f/f1/Photo_de_l%27h%C3%B4tel_de_ville_de_la_ville_d%27Aulnay-Sous-Bois.jpg/500px-Photo_de_l%27h%C3%B4tel_de_ville_de_la_ville_d%27Aulnay-Sous-Bois.jpg',
+  stdenis:   WM + '1/19/Saint-Denis_Basilique_Saint-Denis_Fassade_1.jpg/500px-Saint-Denis_Basilique_Saint-Denis_Fassade_1.jpg',
+  paris18:   WM + '7/75/Montmarte_2_%28pixinn.net%29.jpg/500px-Montmarte_2_%28pixinn.net%29.jpg',
+  paris19:   WM + 'c/ce/Orgues_de_Flandre_-_Paris_-_Martin_Schulz_van_Treeck%2C_Photo_Maxim_Pouska.jpg/500px-Orgues_de_Flandre_-_Paris_-_Martin_Schulz_van_Treeck%2C_Photo_Maxim_Pouska.jpg',
+  trappes:   WM + '6/61/Trappes_Mairie.JPG/500px-Trappes_Mairie.JPG',
+  mantes:    WM + '6/66/Mantes-la-Jolie_%2878%29%2C_coll%C3%A9giale_Notre-Dame%2C_vue_g%C3%A9n%C3%A9rale_depuis_le_nord_7.jpg/500px-Mantes-la-Jolie_%2878%29%2C_coll%C3%A9giale_Notre-Dame%2C_vue_g%C3%A9n%C3%A9rale_depuis_le_nord_7.jpg',
+};
+(function () {
+  const st = document.createElement('style');
+  st.textContent = Object.entries(CITY_PHOTOS).map(([k, u]) => `.modal:has(.fph-${k}){--ph:url("${u}")}`).join('\n');
+  document.head.appendChild(st);
+  // préchargement discret pour que la photo s'affiche tout de suite
+  setTimeout(() => Object.values(CITY_PHOTOS).forEach(u => { const im = new Image(); im.src = u; }), 2500);
+})();
 
 const Q = (name, city, price, c, h, k, max) => ({ type: 'quartier', name, city, price, prices: { cannabis: c, heroine: h, cocaine: k }, max });
 /* Même disposition qu'un plateau classique : coins aux 4 coins, 11 cases par côté,
@@ -513,7 +541,7 @@ const BOARD = [
   Q('Lochères', 'sarcelles', 60, 10, 20, 40, 8),                                       // 1
   { type: 'street', name: 'Street Cred', icon: '🎤' },                                  // 2
   Q('Les Flanades', 'sarcelles', 80, 15, 25, 50, 8),                                   // 3
-  { type: 'tax', name: 'Redressement fiscal', icon: '🧾' },                             // 4
+  { type: 'offshore', name: 'Banque Ouest – Panama', icon: '🌴' },                      // 4
   { type: 'appro', name: 'Go-Fast du Rif', product: 'cannabis', icon: '🏎️' },          // 5
   Q('La Grande Borne', 'grigny', 100, 15, 30, 60, 8),                                  // 6
   { type: 'mandat', name: 'Mandat & Police', icon: '⚖️' },                              // 7
@@ -546,13 +574,13 @@ const BOARD = [
   Q('Le Triangle', 'trappes', 340, 50, 75, 150, 6),                                    // 34
   { type: 'offshore', name: 'Zurich International Bank', icon: '🏔️' },                  // 35
   { type: 'mandat', name: 'Mandat & Police', icon: '⚖️' },                              // 36
-  { type: 'enterprise', key: 'kebab', name: 'Le Kebab du Coin', icon: '🥙' },           // 37
-  { type: 'offshore', name: 'Banque Ouest – Panama', icon: '🌴' },                      // 38
-  { type: 'enterprise', key: 'garage', name: 'Garage Auto Express', icon: '🚗' },       // 39
+  Q('Les Brouets', 'mantes', 350, 50, 80, 160, 4),                                    // 37
+  { type: 'tax', name: 'Redressement fiscal', icon: '🧾' },                             // 38
+  Q('Val Fourré', 'mantes', 400, 60, 90, 180, 4),                                      // 39
 ];
 BOARD.forEach((c, i) => c.idx = i);
 const PRISON_IDX = 10, VISIT_IDX = 10, GOTO_PRISON_IDX = 30, GOURMAND_IDX = 28;   // la prison est dans le coin « Simple visite »
-const APPRO_IDX = [5, 15, 25], OFFSHORE_IDX = [35, 38];
+const APPRO_IDX = [5, 15, 25], OFFSHORE_IDX = [4, 35];
 
 const ENTERPRISES = {
   renovation: { name: 'Entreprise de Rénovation', icon: '🏗️', max: 300, loss: 0.10, price: 250 },
@@ -617,6 +645,14 @@ const STREET = [
       const ok = await ask('🏗️ Entreprise de Rénovation', `Acheter pour <b>${eur(E.price)}</b> (CB) ?<br>Blanchiment <b>300 €/tour</b>, perte <b>−10 %</b>.<p class="dim">Ta CB : ${eur(p.cb)}</p>`,
         [{ label: 'Non merci', value: false }, { label: `Acheter ${eur(E.price)}`, value: true, kind: 'primary' }]);
       if (ok) { p.cb -= E.price; e.owner = p.id; e.closed = 0; log(`🏗️ ${P(p)} rachète l’<b>Entreprise de Rénovation</b> (${eur(E.price)}).`); } } },
+  { t: 'Un local à reprendre', i: '🔑', x: 'Un commerçant veut se débarrasser de son affaire : achète le <b>Garage Auto Express</b> (250 €/tour, −15 %, 200 €) ou <b>Le Kebab du Coin</b> (200 €/tour, −20 %, 150 €) si tu n’as pas encore d’entreprise.',
+    fx: async p => {
+      if (entOf(p.id)) { log(`🔑 ${P(p)} a déjà une entreprise (1 max).`); return info('🔑 Un local à reprendre', 'Tu as déjà une entreprise (1 max par joueur) : tu déclines.', { who: p }); }
+      const free = ['garage', 'kebab'].filter(k => S.ent[k].owner === null);
+      if (!free.length) { log('🔑 Le garage et le kebab sont déjà rachetés.'); return info('🔑 Un local à reprendre', 'Trop tard : le garage et le kebab sont déjà rachetés.', { who: p }); }
+      const btns = [{ label: 'Non merci', value: null }].concat(free.map(k => ({ label: `${ENTERPRISES[k].icon} ${ENTERPRISES[k].name} · ${eur(ENTERPRISES[k].price)}`, value: k, kind: 'primary', disabled: p.cb < ENTERPRISES[k].price })));
+      const k = await ask('🔑 Un local à reprendre', `Quelle affaire veux-tu racheter ? (paiement en CB)<p class="dim">Ta CB : ${eur(p.cb)}</p>`, btns, { who: p, autoPick: en => en[en.length - 1] });
+      if (k && p.cb >= ENTERPRISES[k].price) { p.cb -= ENTERPRISES[k].price; S.ent[k].owner = p.id; S.ent[k].closed = 0; log(`🔑 ${P(p)} rachète <b>${ENTERPRISES[k].name}</b> (${eur(ENTERPRISES[k].price)}).`); } } },
   { t: 'Faux billets', i: '🧻', x: 'Le client t’a refilé des faux : <b>perds 50 € de liquide</b>.',
     fx: p => { const l = Math.min(50, p.liq); p.liq -= l; log(`🧻 ${P(p)} perd ${eur(l)} de liquide (faux billets).`); } },
 ];
@@ -672,17 +708,17 @@ const MANDAT = [
    ===================================================================== */
 let S = null;
 let actionResolver = null;
-const SAVE_KEY = 'lereseau.save.v2';   // v2 : nouvel ordre des cases
+const SAVE_KEY = 'lereseau.save.v3';   // v3 : Mantes-la-Jolie + Panama en case 4
 
 function newGame(cfg) {
   S = {
-    v: 2,
+    v: 3,
     players: cfg.players.map((p, i) => ({ id: i, name: p.name, color: p.color, pos: 0, cb: RULES.START_CB, liq: 0,
       skip: 0, inPrison: false, credit: 0, vice: 0, planque: 0, freeAppro: 0, ruined: false, dev: p.dev || 'host' })),
     props: {}, ent: {}, police: VISIT_IDX, cur: 0, round: 1, maxRounds: cfg.maxRounds, turnNo: 0,
     decks: { street: shuffle([...STREET.keys()]), mandat: shuffle([...MANDAT.keys()]) },
     log: [], logN: 0, over: false, overReason: '', dice: [1, 1], pdie: null, t: null, room: cfg.room || null,
-    stats: cfg.players.map(() => ({ sales: 0, laund: 0, prison: 0, seized: 0 })),
+    stats: cfg.players.map(() => newStats()),
     hist: [cfg.players.map(() => RULES.START_CB)],
   };
   BOARD.forEach((c, i) => { if (c.type === 'quartier' || c.type === 'gourmand') S.props[i] = { owner: null, product: null, stock: 0, last: -1 }; });
@@ -762,7 +798,7 @@ function gainCB(p, n, why) { p.cb += n; log(`💳 ${P(p)} reçoit ${eur(n)} CB (
 function gainLiq(p, n, why) { p.liq += n; log(`💵 ${P(p)} reçoit ${eur(n)} en liquide (${why}).`); toast(`💵 +${eur(n)} liquide — ${why}`, p.color); }
 async function payFine(p, n, why) {
   const ok = await pay(p, n, null, why);
-  if (ok) { log(`💸 ${P(p)} paie ${eur(n)} CB (${why}).`); toast(`💸 −${eur(n)} CB — ${why}`, p.color); }
+  if (ok) { ST(p).fines += n; log(`💸 ${P(p)} paie ${eur(n)} CB (${why}).`); toast(`💸 −${eur(n)} CB — ${why}`, p.color); }
 }
 /** Paiement en CB. toLiq = le bénéficiaire reçoit du liquide (vente de produit). */
 async function pay(p, amount, to, why, toLiq = false) {
@@ -954,7 +990,7 @@ async function playerTurn(p) {
 async function autoSale(p) {
   const { total, parts } = sellFromQuartiers(p, RULES.AUTO_SALE);
   if (total > 0) {
-    ST(p).sales += total;
+    ST(p).sales += total; ST(p).maxLiq = Math.max(ST(p).maxLiq, p.liq);
     log(`💸 Vente auto de ${P(p)} : +${eur(total)} en liquide (${parts.join(', ')})`);
     toast(`💸 Vente automatique : +${eur(total)} en liquide`, p.color);
     render(); await sleep(450);
@@ -978,8 +1014,9 @@ function sellFromQuartiers(p, n) {
 async function movePlayer(p, steps) {
   const dir = steps >= 0 ? 1 : -1;
   for (let s = 0; s < Math.abs(steps); s++) {
-    p.pos = (p.pos + dir + 40) % 40;
+    p.pos = (p.pos + dir + 40) % 40; ST(p).steps++;
     if (dir > 0 && p.pos === 0) {
+      ST(p).laps++;
       p.cb += RULES.SALARY;
       log(`🏁 ${P(p)} passe par le Départ : +${eur(RULES.SALARY)} CB`);
       toast(`🏁 Départ : +${eur(RULES.SALARY)} CB`, p.color);
@@ -1027,7 +1064,7 @@ async function landQuartier(p, i) {
   const c = BOARD[i], pr = S.props[i], city = CITIES[c.city];
   if (pr.owner === null) {
     const ok = await offerBuy(p, `📍 ${c.name}`, ficheHTML(i), c.price, city.color);
-    if (ok) { p.cb -= c.price; pr.owner = p.id; log(`🏠 ${P(p)} achète <b>${c.name}</b> (${eur(c.price)}).`);
+    if (ok) { p.cb -= c.price; pr.owner = p.id; ST(p).buys++; log(`🏠 ${P(p)} achète <b>${c.name}</b> (${eur(c.price)}).`);
       if (ownsCity(p.id, c.city)) { log(`👑 ${P(p)} contrôle toute la ville de <b>${city.name}</b> : prix ×2 !`); splash('👑 VILLE COMPLÈTE', `${esc(p.name)} tient ${city.name} — prix ×2`, p.color, 'crown'); } }
     return;
   }
@@ -1039,7 +1076,7 @@ async function landQuartier(p, i) {
   const ok = await pay(p, price, o, `achat à ${c.name}`, true);
   if (!ok) return;
   pr.stock--; if (!pr.stock) pr.product = null;
-  ST(o).sales += price;
+  ST(o).sales += price; ST(p).client += price;
   log(`💊 ${P(p)} achète 1 ${prod.icon} ${prod.name} à ${c.name} : ${eur(price)} CB → ${P(o)} (+${eur(price)} liquide)`);
   toast(`${prod.icon} ${esc(p.name)} paie ${eur(price)} à ${esc(o.name)}`, o.color);
   render(); await sleep(500);
@@ -1058,7 +1095,7 @@ async function landGourmand(p, i) {
   const c = BOARD[i], pr = S.props[i];
   if (pr.owner === null) {
     const ok = await offerBuy(p, '🍔 Le Gourmand', ficheHTML(i), c.price, '#ff9f43');
-    if (ok) { p.cb -= c.price; pr.owner = p.id; log(`🍔 ${P(p)} achète <b>Le Gourmand</b> (${eur(c.price)}).`); }
+    if (ok) { p.cb -= c.price; pr.owner = p.id; ST(p).buys++; log(`🍔 ${P(p)} achète <b>Le Gourmand</b> (${eur(c.price)}).`); }
     return;
   }
   if (pr.owner === p.id) { log(`🍔 ${P(p)} mange gratos dans son snack.`); return; }
@@ -1093,10 +1130,11 @@ async function pmuDialog(p) {
     [{ label: 'Pas de pari', value: 0 }, ...[1, 2, 3, 4, 5, 6].map(k => ({ label: String(k), value: k, kind: 'primary' }))],
     { color: '#2ecc71', grid: true });
   if (!n) { log(`🐎 ${P(p)} ne parie pas.`); return; }
-  p.cb -= RULES.PMU_BET;
+  p.cb -= RULES.PMU_BET; ST(p).pmu++;
   const [r] = await rollDice(1);
   if (r === n) {
-    p.cb += RULES.PMU_WIN;
+    p.cb += RULES.PMU_WIN; ST(p).pmuWin++;
+    splash('🐎 JACKPOT !', `${esc(p.name)} gagne ${eur(RULES.PMU_WIN)} au PMU`, '#2ecc71', 'win');
     log(`🐎 ${P(p)} parie sur le ${n}… le dé fait ${r} : <b>GAGNÉ ${eur(RULES.PMU_WIN)}</b> !`);
     await info('🐎 PMU — GAGNÉ !', `Le dé fait <b>${r}</b> : tu remportes <b>${eur(RULES.PMU_WIN)}</b> (CB) 🎉`, { color: '#2ecc71' });
   } else {
@@ -1207,6 +1245,7 @@ async function drawCard(p, deck, depth) {
   const list = deck === 'street' ? STREET : MANDAT;
   const id = S.decks[deck].shift(); S.decks[deck].push(id);
   const card = list[id];
+  ST(p).cards++;
   log(`${deck === 'street' ? '🎤' : '⚖️'} ${P(p)} pioche « <b>${card.t}</b> »`);
   await ask('', `<div class="card ${deck}"><div class="deck">${deck === 'street' ? 'STREET CRED' : 'MANDAT & POLICE'}</div>
     <div class="cic">${card.i}</div><div class="ttl">${card.t}</div><div class="txt">${card.x}</div></div>`,
@@ -1217,6 +1256,7 @@ async function drawCard(p, deck, depth) {
 
 /* ---------------- Police & prison ---------------- */
 async function control(p, why) {
+  ST(p).controls++;
   if (p.liq <= RULES.CONTROL_LIMIT) {
     log(`🔦 ${why} : ${P(p)} est contrôlé… RAS (${eur(p.liq)} de liquide).`);
     return info(`🔦 ${why}`, `${P(p)} est contrôlé.<br>Liquide sur lui : <b>${eur(p.liq)}</b> — pas plus de ${eur(RULES.CONTROL_LIMIT)}.<br><b>Rien à signaler.</b>`, { color: '#3a86ff', who: p });
@@ -1227,7 +1267,7 @@ async function control(p, why) {
      • Payer <b>${eur(RULES.CONTROL_FINE)}</b> (CB) et repartir<br>• ou aller en <b>prison</b> : tout le liquide est saisi + 1 tour sauté`,
     [{ label: '⛓️ Prison', value: 'prison', kind: 'danger' }, { label: `💳 Payer ${eur(RULES.CONTROL_FINE)}`, value: 'pay', kind: 'primary', disabled: !canPay }],
     { color: '#ff3b5c', autoPick: en => en[en.length - 1], who: p });
-  if (ch === 'pay') { p.cb -= RULES.CONTROL_FINE; log(`💳 ${P(p)} paie ${eur(RULES.CONTROL_FINE)} pour éviter la prison.`); }
+  if (ch === 'pay') { p.cb -= RULES.CONTROL_FINE; ST(p).fines += RULES.CONTROL_FINE; log(`💳 ${P(p)} paie ${eur(RULES.CONTROL_FINE)} pour éviter la prison.`); }
   else await goToPrison(p, why);
 }
 
@@ -1235,9 +1275,9 @@ async function goToPrison(p, why) {
   if (p.vice > 0) {
     const use = await ask('📜 Vice de procédure', `${P(p)} doit aller en prison (${why}).<br>Utiliser ta carte <b>Vice de procédure</b> pour l’éviter ?`,
       [{ label: 'Non', value: false }, { label: 'Oui, je l’utilise', value: true, kind: 'primary' }], { autoPick: en => en[en.length - 1], who: p });
-    if (use) { p.vice--; log(`📜 ${P(p)} sort sa carte Vice de procédure : pas de prison !`); return false; }
+    if (use) { p.vice--; ST(p).vice++; log(`📜 ${P(p)} sort sa carte Vice de procédure : pas de prison !`); return false; }
   }
-  const seized = p.liq;
+  const seized = p.liq; ST(p).liqLost += seized;
   p.liq = 0; p.pos = PRISON_IDX; p.skip += 1; p.inPrison = true; ST(p).prison++;
   log(`⛓️ ${P(p)} part en prison (${why}). Liquide saisi : ${eur(seized)}.`);
   render();
@@ -1701,9 +1741,13 @@ function showEmote(pid, e) {
 }
 
 /* ---------- Statistiques de partie ---------- */
+const STAT_KEYS = ['sales', 'laund', 'prison', 'seized', 'pmu', 'pmuWin', 'fines', 'buys', 'client', 'cards', 'controls', 'steps', 'laps', 'vice', 'liqLost', 'maxLiq'];
+function newStats() { const o = {}; STAT_KEYS.forEach(k => o[k] = 0); return o; }
 function ST(p) {
-  if (!S.stats) S.stats = S.players.map(() => ({ sales: 0, laund: 0, prison: 0, seized: 0 }));
-  return S.stats[p.id];
+  if (!S.stats) S.stats = S.players.map(() => newStats());
+  const s = S.stats[p.id];
+  STAT_KEYS.forEach(k => { if (typeof s[k] !== 'number') s[k] = 0; });
+  return s;
 }
 
 /* ---------------- Modales ---------------- */
@@ -1877,7 +1921,7 @@ function ficheHTML(i) {
   switch (c.type) {
     case 'quartier': {
       const city = CITIES[c.city], pr = S.props[i], o = pr.owner !== null ? S.players[pr.owner] : null, full = o && ownsCity(o.id, c.city);
-      return `<div class="fband" style="background:${city.color}">${city.name} · ${city.label}</div>
+      return `<div class="fband" style="background:${city.color}">${city.name} · ${city.label}</div>${CITY_PHOTOS[c.city] ? `<div class="fph fph-${c.city}">📷 ${city.name} · Wikimedia Commons</div>` : ''}
         <table class="ft"><tr><td>💰 Prix d’achat</td><td><b>${eur(c.price)}</b></td></tr>
         ${PKEYS.map(k => `<tr><td>${PRODUCTS[k].icon} ${PRODUCTS[k].name}</td><td><b>${eur(c.prices[k] * (full ? 2 : 1))}</b>${full ? ' <span class="x2i">×2</span>' : ''} <span class="dim">· stock max ${cap(i, k)}</span></td></tr>`).join('')}
         <tr><td>📦 Stock max du quartier</td><td><b>${c.max}</b></td></tr></table>
@@ -1920,7 +1964,7 @@ const RULES_HTML = `<h2>📜 Règles détaillées</h2><div class="rules">
 <h4>⛓️ Prison</h4><p>La case <b>Prison</b> (coin en haut à droite) t’envoie dans la cellule du coin <b>Simple visite</b>. 1 tour sauté, tout le liquide est saisi, les ventes automatiques continuent.</p>
 <h4>🏁 Fin</h4><p>Nombre de tours atteint, ou un joueur ruiné → le joueur avec le plus de <b>CB</b> gagne.</p>
 <h4>🌐 En ligne</h4><ul><li>Un joueur crée la partie et donne le code (ou le lien) aux autres. Chacun joue sur son appareil.</li><li>Les choix (achat, cartes, contrôle…) s’affichent chez le joueur concerné ; les autres voient ce qui se passe.</li><li>Si quelqu’un est coupé, il revient en rouvrant le lien avec <b>le même pseudo</b>. L’hôte doit garder la page ouverte.</li></ul>
-<h4>🛠️ Précisions de l’appli</h4><ul class="dim"><li>Redressement fiscal : 100 €. Le Gourmand 150 €, Kebab 150 €, Garage 200 €.</li><li>Rénovation et Laverie s’obtiennent via les cartes Street Cred.</li><li>Revendre un bien à la banque : 50 % du prix d’achat.</li><li>Si tu ne peux pas payer : blanchis ou revends, sinon faillite (fin de partie).</li><li>Partie sauvegardée automatiquement au début de chaque tour (chez l’hôte).</li></ul>
+<h4>🛠️ Précisions de l’appli</h4><ul class="dim"><li>Redressement fiscal : 200 €. Le Gourmand 150 €.</li><li>Les entreprises (Rénovation, Garage, Kebab, Laverie) s’obtiennent via les cartes Street Cred.</li><li>Revendre un bien à la banque : 50 % du prix d’achat.</li><li>Si tu ne peux pas payer : blanchis ou revends, sinon faillite (fin de partie).</li><li>Partie sauvegardée automatiquement au début de chaque tour (chez l’hôte).</li></ul>
 </div><div class="mbtns"><button class="btn primary">Fermer</button></div>`;
 function showFullRules() {
   const w = openModal(RULES_HTML, { wide: true });
@@ -2034,16 +2078,45 @@ function showEnd() {
 /* ---------- Distinctions de fin de partie ---------- */
 function awardsHTML() {
   if (!S.stats) return '';
-  const A = [['sales', '💸', 'Meilleur dealer', v => `${eur(v)} de ventes`],
-             ['laund', '🧼', 'Roi du blanchiment', v => `${eur(v)} blanchis`],
-             ['prison', '⛓️', 'Abonné de la prison', v => `${v} séjour${v > 1 ? 's' : ''}`],
-             ['seized', '🚨', 'Le plus perquisitionné', v => `${v} doses saisies`]];
-  const out = A.map(([k, ic, t, f]) => {
-    let b = null;
-    S.players.forEach(p => { const v = (S.stats[p.id] || {})[k] || 0; if (v > 0 && (!b || v > S.stats[b.id][k])) b = p; });
-    return b ? `<div class="aw"><span class="ai">${ic}</span><div><small>${t}</small><b><i style="background:${b.color}"></i>${esc(b.name)}</b><span class="dim">${f(S.stats[b.id][k])}</span></div></div>` : '';
+  const s = p => S.stats[p.id] || {};
+  const pl = (v, w) => `${v} ${w}${v > 1 ? 's' : ''}`;
+  // valeurs calculées à partir de la courbe de CB
+  const H = chartRows(), drop = {}, climb = {};
+  S.players.forEach((p, j) => {
+    let worst = 0, low = H[0][j], best = 0;
+    for (let k = 1; k < H.length; k++) { worst = Math.min(worst, H[k][j] - H[k - 1][j]); low = Math.min(low, H[k][j]); }
+    best = H[H.length - 1][j] - low; drop[p.id] = -worst; climb[p.id] = best;
+  });
+  const titles = [
+    ['💸', 'Meilleur dealer', p => s(p).sales, v => `${eur(v)} de ventes`],
+    ['🧼', 'Roi du blanchiment', p => s(p).laund, v => `${eur(v)} lavés plus blanc que blanc`],
+    ['⛓️', 'Abonné de la prison', p => s(p).prison, v => `${pl(v, 'séjour')} — il a sa cellule attitrée`],
+    ['🚨', 'Chouchou des stups', p => s(p).seized, v => `${pl(v, 'dose')} saisie${v > 1 ? 's' : ''}`],
+    ['🛍️', 'Meilleur client du quartier', p => s(p).client, v => `${eur(v)} dépensés chez les autres`],
+    ['🏗️', 'Le promoteur immobilier', p => s(p).buys, v => `${pl(v, 'quartier')} achetés`],
+    ['🐎', 'Accro au PMU', p => s(p).pmu, v => `${pl(v, 'pari')} au comptoir`],
+    ['🍀', 'Le chanceux', p => s(p).pmuWin, v => `${pl(v, 'jackpot')} au PMU`],
+    ['🧾', 'Meilleur ami du fisc', p => s(p).fines, v => `${eur(v)} d’amendes et taxes`],
+    ['👟', 'Le marathonien', p => s(p).steps, v => `${v} cases parcourues`],
+    ['🔄', 'Le chauffeur VTC', p => s(p).laps, v => `${pl(v, 'tour')} complet${v > 1 ? 's' : ''} du plateau`],
+    ['🃏', 'Le collectionneur de cartes', p => s(p).cards, v => `${pl(v, 'carte')} piochée${v > 1 ? 's' : ''}`],
+    ['🔦', 'Aimant à keufs', p => s(p).controls, v => `${pl(v, 'contrôle')} subi${v > 1 ? 's' : ''}`],
+    ['💼', 'La valise de billets', p => s(p).maxLiq, v => `jusqu’à ${eur(v)} de liquide sur lui`],
+    ['🔥', 'Le barbecue de billets', p => s(p).liqLost, v => `${eur(v)} de liquide saisis`],
+    ['📜', 'L’avocat dans la poche', p => s(p).vice, v => `${pl(v, 'vice')} de procédure utilisé${v > 1 ? 's' : ''}`],
+    ['📉', 'La chute libre', p => drop[p.id], v => `−${eur(v)} en un seul tour`],
+    ['🚀', 'La remontada', p => climb[p.id], v => `+${eur(v)} depuis son point le plus bas`],
+  ];
+  const out = titles.map(([ic, t, get, f]) => {
+    let b = null, bv = 0;
+    S.players.forEach(p => { const v = get(p) || 0; if (v > bv) { b = p; bv = v; } });
+    return b ? `<div class="aw"><span class="ai">${ic}</span><div><small>${t}</small><b><i style="background:${b.color}"></i>${esc(b.name)}</b><span class="dim">${f(bv)}</span></div></div>` : '';
   }).join('');
-  return out ? `<div class="awards">${out}</div>` : '';
+  // le touriste : celui qui a le moins vendu
+  const ranked = [...S.players].sort((a, b) => (s(a).sales || 0) - (s(b).sales || 0));
+  const tour = S.players.length > 1 && (s(ranked[0]).sales || 0) < (s(ranked[1]).sales || 0)
+    ? `<div class="aw"><span class="ai">📸</span><div><small>Le touriste</small><b><i style="background:${ranked[0].color}"></i>${esc(ranked[0].name)}</b><span class="dim">le moins de ventes (${eur(s(ranked[0]).sales || 0)}) : il était là pour visiter</span></div></div>` : '';
+  return out || tour ? `<h3 class="awh">🏅 Les titres de la partie</h3><div class="awards">${out}${tour}</div>` : '';
 }
 
 /* ---------- Courbe de la CB tour par tour ---------- */
@@ -2112,7 +2185,7 @@ const NET = { mode: null, peer: null, conns: new Map(), conn: null, code: null, 
   seq: 0, rid: 0, pending: { ask: null, dlg: null }, askWait: null, dlgWait: null, dirty: false,
   lobby: [], lobbyRounds: 20, waiting: false, log: [], connMap: [], asks: new Map(), dlgs: new Map(), execWait: new Map(),
   joined: false, gameShown: false, ended: false, myTurn: false, retry: null };
-const PEER_PREFIX = 'lereseau-v2-';
+const PEER_PREFIX = 'lereseau-v3-';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const newCode = () => Array.from({ length: 4 }, () => CODE_CHARS[rnd(CODE_CHARS.length)]).join('');
 const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 16);
@@ -2530,7 +2603,7 @@ function leaveOnline() {
     showGame(); gameLoop();
   };
   const saved = loadSave();
-  if (saved && saved.v === 2 && !saved.over) {
+  if (saved && saved.v === 3 && !saved.over) {
     const b = $('#resumeBtn'); b.hidden = false;
     b.textContent = `↩️ Reprendre la partie (${saved.players.map(p => p.name).join(', ')} — tour ${saved.round}${saved.room ? ` · en ligne, code ${saved.room}` : ''})`;
     b.onclick = () => { if (saved.room) hostResume(saved); else { S = saved; showGame(); gameLoop(); } };
