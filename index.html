@@ -373,6 +373,18 @@ select{background:#0f0f15;border:1px solid #333344;color:var(--txt);border-radiu
   -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 45%,rgba(0,0,0,.35) 100%);mask-image:linear-gradient(180deg,#000 0%,#000 45%,rgba(0,0,0,.35) 100%)}
 .fph{font-size:10px;color:#8a8a9c;text-align:right;margin:-4px 0 4px}
 .modal:has(.fph) .ft{background:#0d0d14b3;border-radius:8px}
+/* Échanges */
+.tpick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.tpick .btn{border-left:5px solid var(--c)}
+.tcols,.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tcol,.tgrid>div{background:#22222e;border-radius:10px;padding:9px 10px}
+.tcol h4,.tgrid h4{margin:0 0 6px;font-size:14px}
+.tcol label{display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:5px}
+.tcol label input[type=number]{width:82px;background:#0f0f15;border:1px solid #33334a;color:var(--txt);border-radius:6px;padding:3px 6px}
+.tcol label small{color:var(--dim)}
+.tcol .tas{background:#1a1a24;border-radius:6px;padding:3px 6px}
+.tline{font-size:14px;padding:2px 0}
+@media (max-width:560px){.tcols,.tgrid{grid-template-columns:1fr}}
 .awh{margin:14px 0 0;font-size:15px}
 .awards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0}
 .aw{display:flex;gap:8px;align-items:center;background:#22222e;border-radius:10px;padding:8px 10px}
@@ -494,7 +506,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
    DONNÉES DU JEU
    ===================================================================== */
 const RULES = {
-  START_CB: 1500, SALARY: 200, BANK_CAP: 200, CONTROL_LIMIT: 200, CONTROL_FINE: 100,
+  START_CB: 1500, SALARY: 200, BANK_CAP: 50, CONTROL_LIMIT: 200, CONTROL_FINE: 100,
   PMU_BET: 100, PMU_WIN: 500, OFFSHORE_CAP: 500, OFFSHORE_LOSS: 0.30,
   GOURMAND_PRICE: 150, GOURMAND_CAP: 300, TAX: 200, RENT_RATIO: 0.2, PMU_PRICE: 200, PMU_FEE: 10, PMU_OWNER_LOSS: 50, SELL_RATIO: 0.5, AUTO_SALE: 2,
 };
@@ -961,6 +973,7 @@ function waitAction() {
     if (!S.t.rolled) return Promise.resolve('roll');
     if (p.liq > 0 && !S.t.autoL) { S.t.autoL = true; return Promise.resolve('launder'); }
     if (!S.t.autoS && rnd(12) === 0 && assetsOf(p).length) { S.t.autoS = true; return Promise.resolve('sell'); }
+    if (!S.t.autoT && rnd(6) === 0) { S.t.autoT = true; return Promise.resolve('trade'); }
     return Promise.resolve('end');
   }
   return new Promise(r => { actionResolver = r; renderActions(); renderCenter(); netDirty(); });
@@ -995,6 +1008,7 @@ async function playerTurn(p) {
       if (p.inPrison) { await sleep(300); return; }
     } else if (a === 'launder') await launderDialog(p);
     else if (a === 'sell') await sellDialog(p);
+    else if (a === 'trade') await tradeDialog(p);
     else if (a === 'end' && S.t.rolled) return;
     render();
   }
@@ -1614,7 +1628,8 @@ function renderActions() {
   const hot = waiting && p.liq > RULES.CONTROL_LIMIT && S.t && canLaunder(p);
   el.innerHTML = `${main}
     <button class="btn ${hot ? 'pulse' : ''}" data-a="launder" ${waiting && S.t && p.liq > 0 ? '' : 'disabled'}>🧼 Blanchir</button>
-    <button class="btn" data-a="sell" ${waiting && assetsOf(p).length ? '' : 'disabled'}>🏷️ Revendre</button>`;
+    <button class="btn" data-a="sell" ${waiting && assetsOf(p).length ? '' : 'disabled'}>🏷️ Revendre</button>
+    <button class="btn" data-a="trade" ${waiting && S.t && S.players.some(o => o !== p && !o.ruined) ? '' : 'disabled'}>🤝 Échanger</button>`;
   el.querySelectorAll('button').forEach(b => b.onclick = () => { b.blur(); act(b.dataset.a); });
 }
 function renderLog() { const el = $('#log'); if (el && !FAST()) el.innerHTML = S.log.slice(0, 80).map(l => `<div>${l}</div>`).join(''); }
@@ -1786,7 +1801,7 @@ function showEmote(pid, e) {
 }
 
 /* ---------- Statistiques de partie ---------- */
-const STAT_KEYS = ['sales', 'laund', 'prison', 'seized', 'pmu', 'pmuWin', 'fines', 'buys', 'client', 'cards', 'controls', 'steps', 'laps', 'vice', 'liqLost', 'maxLiq'];
+const STAT_KEYS = ['trades', 'sales', 'laund', 'prison', 'seized', 'pmu', 'pmuWin', 'fines', 'buys', 'client', 'cards', 'controls', 'steps', 'laps', 'vice', 'liqLost', 'maxLiq'];
 function newStats() { const o = {}; STAT_KEYS.forEach(k => o[k] = 0); return o; }
 function ST(p) {
   if (!S.stats) S.stats = S.players.map(() => newStats());
@@ -1874,6 +1889,9 @@ function applyDlgOp(p, kind, args, op) {
   } else if (kind === 'sell' && op.op === 's' && op.a) {
     const a = assetsOf(p).find(x => x.kind === op.a.kind && (x.kind === 'prop' ? x.idx === op.a.idx : x.key === op.a.key));
     if (a) sellAsset(p, a);
+  } else if (kind === 'trade' && op.op === 'propose') {
+    const off = cleanOffer(p, op.offer);
+    if (off && !off.error) S.t.tradeOffer = off;
   } else if (kind === 'appro') {
     if (op.op === 'go') approApply(p, args.prod, Array.isArray(op.sel) ? op.sel.map(Number) : []);
     else if (op.op === 'no') { const c = BOARD[p.pos]; log(`${c.icon} ${P(p)} ne prend rien.`); }
@@ -1957,7 +1975,119 @@ function sellUI(pid, args, exec, onOpen) {
     draw();
   });
 }
-const DLG_UI = { launder: launderUI, sell: sellUI, appro: approUI };
+/* ---------------- Échanges entre joueurs ---------------- */
+const assetId = a => a.kind === 'prop' ? 'p' + a.idx : 'e' + a.key;
+const tradeAssets = p => assetsOf(p);
+/** Vérifie une offre (côté hôte) et renvoie une version propre, ou null si elle est invalide. */
+function cleanOffer(p, o) {
+  if (!o || typeof o !== 'object') return null;
+  const q = S.players[+o.to];
+  if (!q || q === p || q.ruined) return null;
+  const side = (pl, s) => {
+    s = s || {};
+    const own = new Map(tradeAssets(pl).map(a => [assetId(a), a]));
+    const ids = [...new Set((Array.isArray(s.assets) ? s.assets : []).map(String))].filter(id => own.has(id));
+    return { cb: Math.max(0, Math.min(Math.floor(+s.cb || 0), pl.cb)), liq: Math.max(0, Math.min(Math.floor(+s.liq || 0), pl.liq)), assets: ids.map(id => own.get(id)) };
+  };
+  const give = side(p, o.give), take = side(q, o.take);
+  if (!give.cb && !give.liq && !give.assets.length && !take.cb && !take.liq && !take.assets.length) return null;
+  // 1 entreprise max par joueur après l'échange
+  const ents = (pl, out, inn) => (entOf(pl.id) && !out.assets.some(a => a.kind === 'ent') ? 1 : 0) + inn.assets.filter(a => a.kind === 'ent').length;
+  if (ents(p, give, take) > 1 || ents(q, take, give) > 1) return { error: 'Un joueur ne peut avoir qu’une seule entreprise.' };
+  return { to: q.id, give, take };
+}
+function sideHTML(s) {
+  const parts = [];
+  if (s.cb) parts.push(`💳 ${eur(s.cb)} CB`);
+  if (s.liq) parts.push(`💵 ${eur(s.liq)} liquide`);
+  s.assets.forEach(a => parts.push(a.label));
+  return parts.length ? parts.map(x => `<div class="tline">${x}</div>`).join('') : '<div class="tline dim">rien</div>';
+}
+function transferAsset(from, to, a) {
+  if (a.kind === 'prop') S.props[a.idx].owner = to.id;   // le stock part avec le quartier
+  else { S.ent[a.key].owner = to.id; }
+}
+async function tradeDialog(p) {
+  if ((S.t.trades || 0) >= 3) { toast('3 propositions d’échange max par tour', p.color, true); return; }
+  S.t.tradeOffer = null;
+  if (AUTO) {   // mode test : offre au hasard
+    const ps = S.players.filter(o => o !== p && !o.ruined); if (!ps.length) return;
+    const q = ps[rnd(ps.length)], qa = tradeAssets(q), pa = tradeAssets(p);
+    const off = cleanOffer(p, { to: q.id, give: { cb: rnd(3) * 100, liq: rnd(2) * 50, assets: pa.length && rnd(3) === 0 ? [assetId(pa[0])] : [] },
+      take: { cb: rnd(2) * 50, assets: qa.length && rnd(2) ? [assetId(qa[rnd(qa.length)])] : [] } });
+    S.t.tradeOffer = off && !off.error ? off : null;
+  } else await runDialog(p, 'trade', {});
+  const off = S.t.tradeOffer; S.t.tradeOffer = null;
+  if (!off) return;
+  S.t.trades = (S.t.trades || 0) + 1;
+  const q = S.players[off.to];
+  log(`🤝 ${P(p)} propose un échange à ${P(q)}.`);
+  render();
+  const yes = await ask(`🤝 Proposition de ${esc(p.name)}`,
+    `<p>${P(p)} te propose un échange, ${P(q)} :</p>
+     <div class="tgrid"><div><h4>Tu reçois</h4>${sideHTML(off.give)}</div><div><h4>Tu donnes</h4>${sideHTML(off.take)}</div></div>
+     <p class="dim">Ta CB : ${eur(q.cb)} · ton liquide : ${eur(q.liq)}</p>`,
+    [{ label: '❌ Refuser', value: false, kind: 'danger' }, { label: '✅ Accepter', value: true, kind: 'primary' }],
+    { who: q, color: '#5ad1ff', wide: true, autoPick: en => rnd(2) ? en[0] : en[1] });
+  // revérifie : rien n'a pu changer entre-temps, mais on reste prudent
+  const ok2 = yes && cleanOffer(p, { to: q.id, give: { cb: off.give.cb, liq: off.give.liq, assets: off.give.assets.map(assetId) }, take: { cb: off.take.cb, liq: off.take.liq, assets: off.take.assets.map(assetId) } });
+  if (!yes || !ok2 || ok2.error) { log(`🙅 ${P(q)} refuse l’échange de ${P(p)}.`); toast(`🙅 ${esc(q.name)} refuse l’échange`, q.color); return; }
+  const g = ok2.give, t = ok2.take;
+  p.cb -= g.cb; q.cb += g.cb; p.liq -= g.liq; q.liq += g.liq;
+  q.cb -= t.cb; p.cb += t.cb; q.liq -= t.liq; p.liq += t.liq;
+  g.assets.forEach(a => transferAsset(p, q, a)); t.assets.forEach(a => transferAsset(q, p, a));
+  ST(p).trades++; ST(q).trades++;
+  const short = s => [s.cb && `${eur(s.cb)} CB`, s.liq && `${eur(s.liq)} liquide`, ...s.assets.map(a => a.name)].filter(Boolean).join(', ') || 'rien';
+  log(`🤝 Marché conclu : ${P(p)} donne ${short(g)} à ${P(q)} contre ${short(t)}.`);
+  splash('🤝 MARCHÉ CONCLU', `${esc(p.name)} ⇄ ${esc(q.name)}`, '#5ad1ff', 'crown');
+  render();
+}
+function tradeUI(pid, args, exec, onOpen) {
+  return new Promise(res => {
+    const w = openModal('', { color: '#5ad1ff', wide: true }); const box = w.querySelector('.modal');
+    if (onOpen) onOpen(w);
+    const p = S.players[pid];
+    const partners = S.players.filter(o => o !== p && !o.ruined);
+    let to = partners.length ? partners[0].id : null, err = '';
+    const st = { give: { cb: 0, liq: 0, assets: new Set() }, take: { cb: 0, liq: 0, assets: new Set() } };
+    let busy = false;
+    const finish = async off => {
+      if (busy) return; busy = true;
+      if (off) await exec({ op: 'propose', offer: off });
+      closeModal(w); await exec({ op: 'done' }); res();
+    };
+    const col = (who, key, pl) => {
+      const s = st[key], as = tradeAssets(pl);
+      return `<div class="tcol"><h4>${key === 'give' ? '📤 Tu donnes' : `📥 Tu demandes à ${esc(pl.name)}`}</h4>
+        <label>💳 CB <input type="number" min="0" max="${pl.cb}" step="10" data-s="${key}" data-f="cb" value="${s.cb}"><small>/ ${eur(pl.cb)}</small></label>
+        <label>💵 Liquide <input type="number" min="0" max="${pl.liq}" step="10" data-s="${key}" data-f="liq" value="${s.liq}"><small>/ ${eur(pl.liq)}</small></label>
+        ${as.length ? as.map(a => `<label class="tas"><input type="checkbox" data-s="${key}" data-id="${assetId(a)}" ${s.assets.has(assetId(a)) ? 'checked' : ''}> ${a.label}</label>`).join('') : '<p class="dim">Aucun bien</p>'}</div>`;
+    };
+    const draw = () => {
+      const q = S.players[to];
+      box.innerHTML = `<h2>🤝 Proposer un échange</h2>
+        ${partners.length ? `<div class="tpick">${partners.map(o => `<button class="btn ${o.id === to ? 'primary' : ''}" data-to="${o.id}" style="--c:${o.color}">${esc(o.name)}</button>`).join('')}</div>
+        <div class="tcols">${col('me', 'give', p)}${col('them', 'take', q)}</div>
+        <p class="dim" style="font-size:13px">L’autre joueur pourra accepter ou refuser. Les quartiers sont échangés avec leur stock. 1 entreprise max par joueur.</p>
+        ${err ? `<p class="warn">${err}</p>` : ''}` : '<p>Personne avec qui échanger.</p>'}
+        <div class="mbtns"><button class="btn" data-a="x">Annuler</button>${partners.length ? '<button class="btn primary" data-a="go">📨 Proposer</button>' : ''}</div>`;
+      box.querySelectorAll('[data-to]').forEach(b => b.onclick = () => { to = +b.dataset.to; st.take = { cb: 0, liq: 0, assets: new Set() }; err = ''; draw(); });
+      box.querySelectorAll('input[type=number]').forEach(inp => inp.oninput = () => { st[inp.dataset.s][inp.dataset.f] = Math.max(0, Math.min(+inp.value || 0, +inp.max)); });
+      box.querySelectorAll('input[type=checkbox]').forEach(cb => cb.onchange = () => { const s = st[cb.dataset.s].assets; cb.checked ? s.add(cb.dataset.id) : s.delete(cb.dataset.id); });
+      box.querySelector('[data-a=x]').onclick = () => finish(null);
+      const go = box.querySelector('[data-a=go]');
+      if (go) go.onclick = () => {
+        const off = { to, give: { cb: st.give.cb, liq: st.give.liq, assets: [...st.give.assets] }, take: { cb: st.take.cb, liq: st.take.liq, assets: [...st.take.assets] } };
+        const chk = cleanOffer(p, off);
+        if (!chk) { err = 'Mets au moins quelque chose dans l’échange.'; draw(); return; }
+        if (chk.error) { err = chk.error; draw(); return; }
+        finish(off);
+      };
+    };
+    draw();
+  });
+}
+const DLG_UI = { launder: launderUI, sell: sellUI, appro: approUI, trade: tradeUI };
 
 /* ---------------- Fiches ---------------- */
 function ficheHTML(i) {
@@ -2004,13 +2134,13 @@ const RULES_HTML = `<h2>📜 Règles détaillées</h2><div class="rules">
 <h4>📍 Quartiers</h4><ul><li>Achat en CB. Un quartier stocke <b>un seul produit</b> à la fois.</li><li>Un adversaire qui s’arrête chez toi paie un <b>loyer</b> = 20 % du prix du quartier (×2 si tu as toute la ville). Il paie en CB, tu touches du <b>liquide</b>.</li><li>S’il y a du stock, il t’achète en plus <b>1 jeton</b> (même principe).</li><li><b>Ville complète</b> (tous les quartiers d’une ville) : loyers et prix des produits <b>×2</b>.</li><li>Revendre un quartier : 50 % du prix, payé en <b>liquide</b>.</li></ul>
 <h4>📦 Approvisionnement</h4><table><tr><th>Case</th><th>Lot</th><th>Prix</th><th>Stock max</th></tr><tr><td>🏎️ Go-Fast du Rif</td><td>5 🟢</td><td>50 €</td><td>8</td></tr><tr><td>✈️ Avion Cargo Caraïbes</td><td>4 🔵</td><td>100 €</td><td>6</td></tr><tr><td>🚢 Porte-Conteneurs Colombie</td><td>3 🔴</td><td>150 €</td><td>4</td></tr></table>
 <p>Tu peux te faire livrer quand tu <b>t’arrêtes</b> sur la case… ou simplement quand tu <b>passes</b> dessus. 1 lot par quartier et par tour. Le stock max réel = le plus petit entre le max du produit et le max du quartier.</p>
-<h4>🧼 Blanchiment</h4><ul><li><b>Banque</b> (hors plateau) : 200 €/tour, sans perte.</li><li><b>Entreprise</b> (1 max) : Rénovation 300 € −10 % · Garage 250 € −15 % · Kebab 200 € −20 % · Laverie 150 € −25 %.</li><li><b>Banques offshore</b> (quand tu tombes dessus) : 500 € max, −30 %, interdit si la Police y est.</li><li><b>Crédit Le Gourmand</b> : sans perte.</li></ul>
+<h4>🧼 Blanchiment</h4><ul><li><b>Banque</b> (hors plateau) : 50 €/tour seulement, sans perte.</li><li><b>Entreprise</b> (1 max) : Rénovation 300 € −10 % · Garage 250 € −15 % · Kebab 200 € −20 % · Laverie 150 € −25 %.</li><li><b>Banques offshore</b> (quand tu tombes dessus) : 500 € max, −30 %, interdit si la Police y est.</li><li><b>Crédit Le Gourmand</b> : sans perte.</li></ul>
 <h4>🍔 Le Gourmand · 🐎 PMU</h4><ul><li>Le Gourmand : le visiteur lance les dés et paie total × 5 € au proprio, qui gagne un crédit de blanchiment = paiement × 2 (plafond 300 €).</li><li>PMU : mise 100 €, choisis 1 à 6, lance un dé. Bon numéro = 500 €.</li><li>Le PMU s’achète (200 €) : son patron touche 10 € sur chaque pari des autres et perd 50 € quand quelqu’un gagne.</li></ul>
 <h4>🚓 Police (une fois par tour, quand tout le monde a joué)</h4><ul><li><b>0 / +1 / +2</b> : la Police avance. Si elle s’arrête sur un quartier, son <b>stock est saisi</b>. Tant qu’elle y stationne, il ne vend rien.</li><li><b>🔍 Enquête</b> : le joueur <b>le plus proche du pion Police</b> est contrôlé (égalité → celui qui a le plus de liquide).</li><li><b>🚨 Descente</b> : le quartier approvisionné le plus proche est saisi.</li><li><b>💥 Bavure</b> : le joueur <b>le plus proche du pion Police</b> saute son prochain tour.</li><li>Un joueur en prison ou qui saute déjà son tour n’est pas visé.</li><li><b>Contrôle</b> : si liquide &gt; 200 € → payer 100 € ou prison.</li></ul>
 <h4>⛓️ Prison</h4><p>La case <b>Prison</b> (coin en haut à droite) t’envoie dans la cellule du coin <b>Simple visite</b>. 1 tour sauté, tout le liquide est saisi, les ventes automatiques continuent.</p>
 <h4>🏁 Fin</h4><p>Nombre de tours atteint, ou un joueur ruiné → le joueur avec le plus de <b>CB</b> gagne.</p>
 <h4>🌐 En ligne</h4><ul><li>Un joueur crée la partie et donne le code (ou le lien) aux autres. Chacun joue sur son appareil.</li><li>Les choix (achat, cartes, contrôle…) s’affichent chez le joueur concerné ; les autres voient ce qui se passe.</li><li>Si quelqu’un est coupé, il revient en rouvrant le lien avec <b>le même pseudo</b>. L’hôte doit garder la page ouverte.</li></ul>
-<h4>🛠️ Précisions de l’appli</h4><ul class="dim"><li>Redressement fiscal : 200 €. Le Gourmand 150 €.</li><li>Les entreprises (Rénovation, Garage, Kebab, Laverie) s’obtiennent via les cartes Street Cred.</li><li>Revendre un bien à la banque : 50 % du prix d’achat.</li><li>Si tu ne peux pas payer : blanchis ou revends, sinon faillite (fin de partie).</li><li>Partie sauvegardée automatiquement au début de chaque tour (chez l’hôte).</li></ul>
+<h4>🛠️ Précisions de l’appli</h4><ul class="dim"><li>Redressement fiscal : 200 €. Le Gourmand 150 €.</li><li>Les entreprises (Rénovation, Garage, Kebab, Laverie) s’obtiennent via les cartes Street Cred.</li><li>Revendre un bien à la banque : 50 % du prix d’achat.</li><li>🤝 <b>Échanger</b> : pendant ton tour, propose à un autre joueur un échange de CB, de liquide et de biens (quartiers avec leur stock, Le Gourmand, PMU, entreprise). Il accepte ou refuse. 3 propositions max par tour.</li><li>Si tu ne peux pas payer : blanchis ou revends, sinon faillite (fin de partie).</li><li>Partie sauvegardée automatiquement au début de chaque tour (chez l’hôte).</li></ul>
 </div><div class="mbtns"><button class="btn primary">Fermer</button></div>`;
 function showFullRules() {
   const w = openModal(RULES_HTML, { wide: true });
@@ -2029,7 +2159,7 @@ const SLIDES = [
     x: `<b>💳 CB</b> = argent légal : il sert à payer et c’est <b>le seul qui compte pour gagner</b>.<br><b>💵 Liquide</b> = argent sale gagné en vendant : il faut le <b>blanchir</b> pour en faire de la CB.<br>Chacun commence avec <b>1 500 € CB</b> · <b>+200 €</b> à chaque passage au Départ.` },
   { t: 'Un tour de jeu', c: '#3ddc84',
     sc: `<div class="sc-dice">${dieDemo('s1')}${dieDemo('s2')}</div><div class="sc-track">${'<b></b>'.repeat(6)}<div class="walker"><i></i></div></div>`,
-    x: `<ol><li><b>Vente automatique</b> : chacun de tes quartiers vend 2 jetons → du liquide.</li><li><b>Lance les dés</b>, avance et résous la case.</li><li>Pendant ton tour, <b>blanchis</b> ou <b>revends</b> quand tu veux.</li><li>Quand tout le monde a joué : <b>tour de la Police</b> 🚓.</li></ol>` },
+    x: `<ol><li><b>Vente automatique</b> : chacun de tes quartiers vend 2 jetons → du liquide.</li><li><b>Lance les dés</b>, avance et résous la case.</li><li>Pendant ton tour, <b>blanchis</b>, <b>revends</b> ou <b>échange</b> avec les autres 🤝 quand tu veux.</li><li>Quand tout le monde a joué : <b>tour de la Police</b> 🚓.</li></ol>` },
   { t: 'Quartiers & villes', c: '#f77f00',
     sc: `<div class="sc-cards"><div class="qc" style="--b:#e63946;--d:0s"><b></b>GOUTTE-D’OR<small>220 €</small></div><div class="qc" style="--b:#e63946;--d:.2s"><b></b>LA CHAPELLE<small>240 €</small></div><div class="qc" style="--b:#e63946;--d:.4s"><b></b>CLIGNAN&shy;COURT<small>260 €</small></div><div class="crown">👑<span>×2</span></div></div>`,
     x: `Achète un quartier en CB. Un adversaire qui s’arrête chez toi paie un <b>loyer</b> (20 % du prix) et t’achète <b>1 jeton</b> s’il y a du stock : tu touches du <b>liquide</b>.<br>👑 Toute la ville à toi = loyers et prix <b>×2</b>.` },
@@ -2039,7 +2169,7 @@ const SLIDES = [
        Arrête-toi <b>ou passe</b> sur une de ces cases pour livrer tes quartiers : <b>1 lot par quartier et par tour</b>, un seul produit par quartier.` },
   { t: 'Blanchir son liquide', c: '#7dff6a',
     sc: `<div class="sc-wash"><span class="fall">💵</span><div class="machine">🏦</div><span class="out">💳</span></div>`,
-    x: `<ul><li>🏦 <b>Banque</b> : 200 €/tour, sans perte.</li><li>🏗️🚗🥙🧺 <b>Entreprise</b> (1 max) : de 300 € −10 % à 150 € −25 %.</li><li>🌴🏔️ <b>Banque offshore</b> (si tu tombes dessus) : 500 € max, −30 %.</li><li>🍔 <b>Crédit Le Gourmand</b> : sans perte.</li></ul>Plus de <b>200 € de liquide</b> sur toi = danger en cas de contrôle !` },
+    x: `<ul><li>🏦 <b>Banque</b> : 50 €/tour seulement, sans perte.</li><li>🏗️🚗🥙🧺 <b>Entreprise</b> (1 max) : de 300 € −10 % à 150 € −25 %.</li><li>🌴🏔️ <b>Banque offshore</b> (si tu tombes dessus) : 500 € max, −30 %.</li><li>🍔 <b>Crédit Le Gourmand</b> : sans perte.</li></ul>Plus de <b>200 € de liquide</b> sur toi = danger en cas de contrôle !` },
   { t: 'La Police', c: '#4d8dff',
     sc: `<div class="sc-police"><span class="car">🚓</span>${cubeHTML(PFACES.map(f => `<span>${f.icon}</span>`), 'pol demo s3')}</div>`,
     x: `Une fois par tour, <b>quand tout le monde a joué</b>, on lance le dé Police :<ul><li><b>0 / +1 / +2</b> : elle avance et <b>saisit le stock</b> du quartier où elle s’arrête.</li><li>🔍 <b>Enquête</b> : contrôle du joueur le plus proche (liquide &gt; 200 € → 100 € ou prison).</li><li>🚨 <b>Descente</b> sur le quartier approvisionné le plus proche · 💥 <b>Bavure</b> : le plus proche saute un tour.</li></ul>` },
@@ -2150,6 +2280,7 @@ function awardsHTML() {
     ['💼', 'La valise de billets', p => s(p).maxLiq, v => `jusqu’à ${eur(v)} de liquide sur lui`],
     ['🔥', 'Le barbecue de billets', p => s(p).liqLost, v => `${eur(v)} de liquide saisis`],
     ['📜', 'L’avocat dans la poche', p => s(p).vice, v => `${pl(v, 'vice')} de procédure utilisé${v > 1 ? 's' : ''}`],
+    ['🤝', 'Le négociateur', p => s(p).trades, v => `${v} marché${v > 1 ? 's' : ''} conclu${v > 1 ? 's' : ''}`],
     ['📉', 'La chute libre', p => drop[p.id], v => `−${eur(v)} en un seul tour`],
     ['🚀', 'La remontada', p => climb[p.id], v => `+${eur(v)} depuis son point le plus bas`],
   ];
@@ -2231,7 +2362,7 @@ const NET = { mode: null, peer: null, conns: new Map(), conn: null, code: null, 
   seq: 0, rid: 0, pending: { ask: null, dlg: null }, askWait: null, dlgWait: null, dirty: false,
   lobby: [], lobbyRounds: 20, waiting: false, log: [], connMap: [], asks: new Map(), dlgs: new Map(), execWait: new Map(),
   joined: false, gameShown: false, ended: false, myTurn: false, retry: null };
-const PEER_PREFIX = 'lereseau-v4-';
+const PEER_PREFIX = 'lereseau-v5-';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const newCode = () => Array.from({ length: 4 }, () => CODE_CHARS[rnd(CODE_CHARS.length)]).join('');
 const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 16);
@@ -2321,7 +2452,7 @@ function hostOnMsg(c, m) {
   if (!c.cid || NET.conns.get(c.cid) !== c || !S) return;
   if (m.t === 'act') {
     const p = cur();
-    if (['roll', 'launder', 'sell', 'end'].includes(m.a) && p.dev === c.cid && actionResolver && !S.policePhase) act(m.a);
+    if (['roll', 'launder', 'sell', 'trade', 'end'].includes(m.a) && p.dev === c.cid && actionResolver && !S.policePhase) act(m.a);
     else sendTo(c, stateMsg(c));
   } else if (m.t === 'ans') {
     const W = NET.askWait;
